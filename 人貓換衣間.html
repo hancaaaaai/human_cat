@@ -1,0 +1,1201 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>人貓換衣間</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: 左邊是可旋轉的 3D 舞台，右邊是貼紙感的衣櫃；手機上改成上下排列 */
+:root{
+  --bg:#eef0f3;
+  --stage:#ffffff;
+  --dot:#d5d9e1;
+  --surface:#ffffff;
+  --ink:#16171b;
+  --muted:#686d78;
+  --accent:#3155ff;
+  --accent-soft:#e3e8ff;
+  --on-accent:#ffffff;
+  --display:"Huninn","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121317;--stage:#1b1c21;--dot:#2c2e36;--surface:#1f2026;--ink:#f0f0ec;--muted:#9a9ea9;--accent:#8a9dff;--accent-soft:#2a3158;--on-accent:#0f1020;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121317;--stage:#1b1c21;--dot:#2c2e36;--surface:#1f2026;--ink:#f0f0ec;--muted:#9a9ea9;--accent:#8a9dff;--accent-soft:#2a3158;--on-accent:#0f1020;color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.app{box-sizing:border-box;height:100%;display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:16px;padding-inline:16px;padding-block:16px}
+.stage{position:relative;min-width:0;min-height:0;border:2px solid var(--ink);border-radius:22px;overflow:hidden;
+  background:var(--stage) radial-gradient(var(--dot) 1.2px,transparent 1.4px) 0 0/22px 22px}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.stage-head{position:absolute;left:20px;top:16px;pointer-events:none}
+.stage-head h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,3.4vw,38px);line-height:1.1;margin:0;letter-spacing:.02em}
+.stage-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.views{position:absolute;left:16px;right:16px;bottom:16px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 13px/1 var(--body);color:var(--ink);background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:8px 13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.chip:focus-visible,.tab:focus-visible,.item:focus-visible,.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.panel{min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;background:var(--surface);border:2px solid var(--ink);border-radius:22px;padding:16px}
+.label{font-size:12px;letter-spacing:.12em;color:var(--muted);margin:0}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tab{font:500 14px/1 var(--display);color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:12px;padding:10px 2px;cursor:pointer;position:relative}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--surface)}
+.tab .on{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--ink)}
+.items{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;align-content:start;padding:2px 5px 6px 2px}
+.item{display:flex;flex-direction:column;align-items:center;gap:2px;font:500 13px/1.25 var(--body);color:var(--ink);background:var(--surface);
+  border:2px solid var(--ink);border-radius:14px;padding:6px 4px 8px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .12s,box-shadow .12s;min-width:0}
+.item:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.item:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.item[aria-pressed="true"]{background:var(--accent-soft)}
+.item span{text-align:center;overflow-wrap:anywhere}
+.item.pose{padding:14px 6px;gap:4px;justify-content:center;min-height:86px}
+.item.pose b{font:400 20px/1.1 var(--display)}
+.item.pose small{color:var(--muted);font-size:11.5px;font-weight:400}
+.busy{position:absolute;top:18px;right:18px;font-size:13px;background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:6px 12px}
+.thumb{width:100%;max-width:92px;aspect-ratio:1;display:grid;place-items:center}
+.thumb img{width:100%;height:100%;object-fit:contain}
+.ph{width:40%;aspect-ratio:1;border-radius:50%;border:2px solid var(--ink);background:var(--a)}
+.ph.none{background:linear-gradient(135deg,transparent 46%,var(--ink) 46% 54%,transparent 54%)}
+.outfit{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}
+.outfit span{font-size:12px;border:1.5px solid var(--ink);border-radius:999px;padding:3px 9px}
+.outfit .empty{border-style:dashed;color:var(--muted)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{font:500 15px/1 var(--display);border:2px solid var(--ink);border-radius:14px;padding:13px;cursor:pointer;background:var(--surface);color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:64svh;min-height:430px}
+  .items{overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){.item{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="人貓 3D 預覽">
+    <div class="stage-head">
+      <h1>人貓換衣間</h1>
+      <p>拖曳可以轉動人貓</p>
+    </div>
+    <div class="busy" id="busy" hidden>換動作中…</div>
+    <div class="views" role="group" aria-label="視角">
+      <button class="chip" id="v-front" data-a="0">正面</button>
+      <button class="chip" id="v-side" data-a="-1.5708">側面</button>
+      <button class="chip" id="v-back" data-a="3.1416">背面</button>
+      <button class="chip" id="v-spin" aria-pressed="false">自動轉</button>
+      <button class="chip" id="v-live" aria-pressed="true">晃動</button>
+      <button class="chip" id="v-boil" aria-pressed="true">線條抖動</button>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <p class="label">衣櫃分類</p>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="items" id="items"></div>
+    <p class="label">目前穿搭</p>
+    <div class="outfit" id="outfit"></div>
+    <div class="actions">
+      <button class="btn primary" id="random">隨機搭配</button>
+      <button class="btn" id="clear">全部脫掉</button>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+const T = THREE, V = T.Vector3, PI = Math.PI;
+const f = (v, e) => Math.sign(v) * Math.pow(Math.abs(v), e);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const X = new V(1, 0, 0), Z = new V(0, 0, 1);
+
+/* ---------- 雜訊（讓線條和外形有手繪感） ---------- */
+function hash3(x, y, z) { const s = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return s - Math.floor(s); }
+function noise3(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  let fx = x - ix, fy = y - iy, fz = z - iz;
+  fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
+  const c = (a, b, d) => hash3(ix + a, iy + b, iz + d);
+  return lerp(lerp(lerp(c(0, 0, 0), c(1, 0, 0), fx), lerp(c(0, 1, 0), c(1, 1, 0), fx), fy),
+              lerp(lerp(c(0, 0, 1), c(1, 0, 1), fx), lerp(c(0, 1, 1), c(1, 1, 1), fx), fy), fz);
+}
+const AMP = 0.02, WFR = 1.5;
+const wob = (x, y, z) => AMP * (2 * noise3(x * WFR + 3.1, y * WFR, z * WFR) - 1);
+
+/* ---------- 渲染 ---------- */
+const stage = document.getElementById('stage');
+const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+stage.prepend(renderer.domElement);
+const scene = new T.Scene();
+const camera = new T.PerspectiveCamera(28, 1, 0.1, 120);
+function addLights(s) {
+  s.add(new T.AmbientLight(0xffffff, 0.84));
+  const d = new T.DirectionalLight(0xffffff, 0.2); d.position.set(-4, 7, 9); s.add(d);
+}
+addLights(scene);
+
+const grad = new T.DataTexture(new Uint8Array([0, 255]), 2, 1, T.RedFormat);
+grad.minFilter = grad.magFilter = T.NearestFilter; grad.generateMipmaps = false; grad.needsUpdate = true;
+const MC = {};
+function toon(c, o = {}) {
+  const key = c + JSON.stringify(o);
+  if (!MC[key]) MC[key] = new T.MeshToonMaterial(Object.assign({ color: new T.Color(c), gradientMap: grad }, o));
+  return MC[key];
+}
+const INK = new T.MeshBasicMaterial({ color: 0x151515 });
+const BLACK = INK;
+
+/* 描邊：反面外擴、螢幕上粗細固定，並用雜訊讓粗細不均 */
+const inkMat = new T.ShaderMaterial({
+  uniforms: { uThick: { value: 2.6 }, uRes: { value: new T.Vector2(1, 1) }, uSeed: { value: 0 } },
+  vertexShader: `uniform float uThick; uniform vec2 uRes; uniform float uSeed;
+    float h(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
+    float vn(vec3 p){ vec3 i = floor(p); vec3 f = fract(p); f = f*f*(3.0-2.0*f);
+      return mix(mix(mix(h(i), h(i+vec3(1,0,0)), f.x), mix(h(i+vec3(0,1,0)), h(i+vec3(1,1,0)), f.x), f.y),
+                 mix(mix(h(i+vec3(0,0,1)), h(i+vec3(1,0,1)), f.x), mix(h(i+vec3(0,1,1)), h(i+vec3(1,1,1)), f.x), f.y), f.z); }
+    #include <common>
+    #include <skinning_pars_vertex>
+    void main(){
+      #include <beginnormal_vertex>
+      #include <skinbase_vertex>
+      #include <skinnormal_vertex>
+      #include <begin_vertex>
+      #include <skinning_vertex>
+      vec4 c = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+      vec3 n = normalize(normalMatrix * objectNormal);
+      float k = 0.55 + 0.9 * vn(position * 2.4 + vec3(uSeed));
+      c.xy += n.xy * uThick * k * 2.0 / uRes * c.w;
+      gl_Position = c; }`,
+  fragmentShader: `void main(){ gl_FragColor = vec4(0.082, 0.082, 0.082, 1.0); }`,
+  side: T.BackSide
+});
+
+/* ---------- 幾何工具 ---------- */
+function smooth(g, weld = true) {
+  g.computeVertexNormals();
+  if (!weld) return g;
+  const p = g.attributes.position, n = g.attributes.normal, m = new Map(), k = [];
+  for (let i = 0; i < p.count; i++) {
+    const key = `${Math.round(p.getX(i) * 1e4)},${Math.round(p.getY(i) * 1e4)},${Math.round(p.getZ(i) * 1e4)}`;
+    k.push(key);
+    const s = m.get(key) || [0, 0, 0];
+    s[0] += n.getX(i); s[1] += n.getY(i); s[2] += n.getZ(i); m.set(key, s);
+  }
+  for (let i = 0; i < p.count; i++) {
+    const s = m.get(k[i]), l = Math.hypot(s[0], s[1], s[2]) || 1;
+    n.setXYZ(i, s[0] / l, s[1] / l, s[2] / l);
+  }
+  return g;
+}
+function wobble(g, weld = true) {
+  smooth(g, weld);
+  const p = g.attributes.position, n = g.attributes.normal;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), d = wob(x, y, z);
+    p.setXYZ(i, x + n.getX(i) * d, y + n.getY(i) * d, z + n.getZ(i) * d);
+  }
+  return smooth(g, weld);
+}
+/* 一圈一圈的截面串成網格（身體、衣服、管狀物都用這個） */
+function ringGeo(rings, o = {}) {
+  const N = o.N ?? 64, R = rings.length, pos = new Float32Array(R * (N + 1) * 3), uv = new Float32Array(R * (N + 1) * 2);
+  const mid = rings[Math.floor(R / 2)];
+  const rep = o.uRep ?? Math.max(1, Math.round(3.4 * (mid.ha + mid.hb) / 1.2));
+  for (let i = 0; i < R; i++) {
+    const r = rings[i];
+    for (let j = 0; j <= N; j++) {
+      const a = j / N * PI * 2, m = r.mod ? r.mod(a) : 1;
+      const A = f(Math.cos(a), r.e) * r.ha * m, B = f(Math.sin(a), r.e) * r.hb * m, q = i * (N + 1) + j;
+      const x = r.o.x + r.a.x * A + r.b.x * B, y = r.o.y + r.a.y * A + r.b.y * B, z = r.o.z + r.a.z * A + r.b.z * B;
+      pos[q * 3] = x; pos[q * 3 + 1] = y; pos[q * 3 + 2] = z;
+      if (o.planar) { uv[q * 2] = x / 1.2; uv[q * 2 + 1] = y / 1.2; }
+      else { uv[q * 2] = o.unitU ? j / N : j / N * rep; uv[q * 2 + 1] = o.unitU ? (r.vu ?? i / (R - 1)) : (r.v ?? i / (R - 1)); }
+    }
+  }
+  const idx = [], RI = o.loop ? R : R - 1;
+  for (let i = 0; i < RI; i++) {
+    const i2 = (i + 1) % R;
+    for (let j = 0; j < N; j++) {
+      const a = i * (N + 1) + j, b = i2 * (N + 1) + j;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.BufferAttribute(pos, 3));
+  g.setAttribute('uv', new T.BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return smooth(g);
+}
+const hring = (cx, y, cz, ha, hb, e, mod) => ({ o: new V(cx, y, cz), a: X, b: Z, ha, hb, e, v: y / 1.2, mod });
+
+/* 人貓身體的輪廓：上寬下窄的圓角方柱 */
+const BY0 = 2.85, BY1 = 6.68, BE = 0.32;
+const bs = y => clamp((y - BY0) / (BY1 - BY0), 0, 1);
+const bHX = y => 1.37 + 0.15 * bs(y), bHZ = y => 0.70 + 0.06 * bs(y), bCX = y => 0.01 * bs(y);
+function prof({ y0, y1, d = 0, dFn = null, r0 = 0, r1 = 0, close0 = false, close1 = false, n = 24, mod = null }) {
+  const E = [], D = y => dFn ? dFn(y) : d, K = 8;
+  if (close0) E.push({ y: y0, d: D(y0), k: 0, mod });
+  if (r0 > 0) for (let k = 0; k < K; k++) { const a = (1 - k / K) * PI / 2; E.push({ y: y0 + r0 - r0 * Math.sin(a), d: D(y0), s: r0 * (1 - Math.cos(a)), mod }); }
+  for (let i = 0; i <= n; i++) { const y = lerp(y0 + r0, y1 - r1, i / n); E.push({ y, d: D(y), mod }); }
+  if (r1 > 0) for (let k = 1; k <= K; k++) { const a = k / K * PI / 2; E.push({ y: y1 - r1 + r1 * Math.sin(a), d: D(y1), s: r1 * (1 - Math.cos(a)), mod }); }
+  if (close1) E.push({ y: y1, d: D(y1), k: 0, mod });
+  return E;
+}
+const bodyRings = E => E.map(e => {
+  const s = e.s || 0, k = e.k ?? 1;
+  return hring(bCX(e.y), e.y, 0, Math.max(0, (bHX(e.y) + e.d - s) * k), Math.max(0, (bHZ(e.y) + e.d - s) * k), BE, e.mod);
+});
+function ringPts(y, d, n = 120, sag = 0) {
+  const pts = [], cx = bCX(y), ha = bHX(y) + d, hb = bHZ(y) + d;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * PI * 2, xn = f(Math.cos(a), BE), zn = f(Math.sin(a), BE);
+    pts.push(new V(cx + ha * xn, y - sag * Math.max(0, zn) ** 2 * (1 - xn * xn), hb * zn));
+  }
+  return pts;
+}
+function wobblePts(pts) {
+  const n = pts.length;
+  return pts.map((p, i) => {
+    const a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n];
+    const t = new V().subVectors(b, a), nr = new V(t.z, 0, -t.x).normalize(), d = wob(p.x, p.y, p.z);
+    return p.clone().addScaledVector(nr, d);
+  });
+}
+/* 沿曲線、半徑可變的管子 */
+function ttube(pts, rFn, o = {}) {
+  const closed = !!o.closed;
+  const c = pts.getPointAt ? pts : new T.CatmullRomCurve3(pts, closed, 'centripetal');
+  const seg = o.seg ?? 48, N = o.N ?? 20, fr = c.computeFrenetFrames(seg, closed), rings = [], L = c.getLength(), K = 7, e = o.e ?? 1, rb = o.rb ?? 1;
+  const R = typeof rFn === 'number' ? () => rFn : rFn;
+  const ring = (P, i, r, v) => ({ o: P, a: fr.normals[i], b: fr.binormals[i].clone().negate(), ha: r, hb: r * rb, e, v });
+  if (o.cap0) { const P = c.getPointAt(0), tg = fr.tangents[0], r = R(0); for (let k = K; k >= 1; k--) { const a = k / K * PI / 2; rings.push(ring(P.clone().addScaledVector(tg, -r * Math.sin(a)), 0, r * Math.cos(a), -r * Math.sin(a) / 1.2)); } }
+  const n = closed ? seg : seg + 1;
+  for (let i = 0; i < n; i++) { const t = i / seg; rings.push(ring(c.getPointAt(t), i, R(t), t * L / 1.2)); }
+  if (o.cap1) { const P = c.getPointAt(1), tg = fr.tangents[seg], r = R(1); for (let k = 1; k <= K; k++) { const a = k / K * PI / 2; rings.push(ring(P.clone().addScaledVector(tg, r * Math.sin(a) * (o.capS ?? 1)), seg, r * Math.cos(a), (L + r * Math.sin(a)) / 1.2)); } }
+  return ringGeo(rings, { N, loop: closed, uRep: Math.max(1, Math.round(2 * PI * R(0.5) / 1.2)) });
+}
+const curve = (pts, closed = false) => new T.CatmullRomCurve3(pts.map(p => p.isVector3 ? p : new V(...p)), closed, 'centripetal');
+function subCurve(c, t0, t1, n = 18) { const p = []; for (let i = 0; i <= n; i++) p.push(c.getPointAt(lerp(t0, t1, i / n))); return curve(p); }
+/* 把正面輪廓（凸多邊形）吹成圓鼓鼓的立體 */
+function puff(pts, depth, o = {}) {
+  const ys = pts.map(p => p[1]), ymin = Math.min(...ys), ymax = Math.max(...ys), R = o.rings ?? 26, e = o.e ?? 0.75, cz = o.cz ?? 0;
+  const span = y => {
+    let lo = 1e9, hi = -1e9;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      if (y < Math.min(p[1], q[1]) - 1e-9 || y > Math.max(p[1], q[1]) + 1e-9) continue;
+      if (Math.abs(q[1] - p[1]) < 1e-9) { lo = Math.min(lo, p[0], q[0]); hi = Math.max(hi, p[0], q[0]); }
+      else { const x = p[0] + (y - p[1]) / (q[1] - p[1]) * (q[0] - p[0]); lo = Math.min(lo, x); hi = Math.max(hi, x); }
+    }
+    return lo > hi ? [0, 0] : [lo, hi];
+  };
+  const rings = [];
+  const mkR = (y, lo, hi, z0) => { const hw = (hi - lo) / 2; return { o: new V((lo + hi) / 2, y, cz), a: X, b: Z, ha: z0 ? 0 : hw, hb: z0 ? 0 : Math.min(depth, hw * (o.k ?? 1)), e }; };
+  for (let i = 0; i <= R; i++) {
+    const y = ymin + (ymax - ymin) * (1 - Math.cos(PI * i / R)) / 2, [lo, hi] = span(y);
+    if (i === 0 && hi - lo > 1e-3) rings.push(mkR(y, lo, hi, true));
+    rings.push(mkR(y, lo, hi));
+    if (i === R && hi - lo > 1e-3) rings.push(mkR(y, lo, hi, true));
+  }
+  return ringGeo(rings, { N: o.N ?? 40, planar: true });
+}
+function blob(hx, hy, hz, o = {}) {
+  const e = o.e ?? 0.3, ey = o.ey ?? e, tp = o.taper ?? 0;
+  const g = new T.SphereGeometry(1, o.ws ?? 48, o.hs ?? 32), p = g.attributes.position, uv = g.attributes.uv;
+  for (let i = 0; i < p.count; i++) {
+    const Xv = f(p.getX(i), e), Yv = f(p.getY(i), ey), Zv = f(p.getZ(i), e), s = 1 - tp * (Yv + 1) / 2;
+    p.setXYZ(i, Xv * hx * s, Yv * hy, Zv * hz * s); uv.setXY(i, Xv * hx / 0.6 + 0.5, Yv * hy / 0.6 + 0.5);
+  }
+  return smooth(g);
+}
+const sph = r => blob(r, r, r, { e: 1, ws: 28, hs: 18 });
+const lathe = (pts, n = 56) => smooth(new T.LatheGeometry(pts.map(([x, y]) => new T.Vector2(x, y)), n));
+function mk(geo, mat, ink = true) {
+  const m = new T.Mesh(geo, typeof mat === 'string' ? toon(mat) : mat);
+  if (ink) m.add(new T.Mesh(geo, inkMat));
+  return m;
+}
+function at(o, x, y, z, rx = 0, ry = 0, rz = 0, s) { o.position.set(x, y, z); o.rotation.set(rx, ry, rz); if (s) o.scale.setScalar(s); return o; }
+const grp = (...c) => { const g = new T.Group(); c.forEach(x => x && g.add(x)); return g; };
+function rimAt(c, t, r) {
+  const m = new T.Mesh(new T.TorusGeometry(r + 0.006, 0.02, 6, 48), INK);
+  m.position.copy(c.getPointAt(t)); m.quaternion.setFromUnitVectors(new V(0, 0, 1), c.getTangentAt(t)); return m;
+}
+const hem = (y, d) => new T.Mesh(ttube(wobblePts(ringPts(y, d, 140)), 0.02, { closed: true, seg: 140, N: 6 }), INK);
+const line = (pts, r = 0.018, closed = false) => new T.Mesh(ttube(pts, r, { closed, seg: 40, N: 6, cap0: !closed, cap1: !closed }), INK);
+
+/* 2D 形狀 */
+const circ = (r, n = 40, ry = r) => Array.from({ length: n }, (_, i) => { const a = i / n * PI * 2; return [r * Math.cos(a), ry * Math.sin(a)]; });
+const sqr = (hx, hy, e = 0.35, n = 48) => Array.from({ length: n }, (_, i) => { const a = i / n * PI * 2; return [hx * f(Math.cos(a), e), hy * f(Math.sin(a), e)]; });
+const semi = (hx, hy, n = 24) => Array.from({ length: n + 1 }, (_, i) => { const a = PI - i / n * PI; return [hx * Math.cos(a), hy * Math.sin(a)]; });
+const heart = (s, n = 64) => Array.from({ length: n }, (_, i) => { const t = i / n * PI * 2; return [16 * Math.sin(t) ** 3 * s / 16, (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * s / 16 + 0.1 * s]; });
+const star = (R, r, n = 5) => Array.from({ length: n * 2 }, (_, i) => { const a = PI / 2 + i * PI / n, q = i % 2 ? r : R; return [q * Math.cos(a), q * Math.sin(a)]; });
+const shift = (pts, dx, dy, sx = 1, sy = 1) => pts.map(([x, y]) => [x * sx + dx, y * sy + dy]);
+const to3 = (pts, z) => pts.map(([x, y]) => new V(x, y, z));
+function flat(pts, mat) { const s = new T.Shape(pts.map(([x, y]) => new T.Vector2(x, y))); return new T.Mesh(new T.ShapeGeometry(s, 12), mat); }
+
+/* ---------- 花紋貼圖 ---------- */
+const TX = {}, TM = {};
+let seed = 1; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function tm(key, draw, w = 256, h = 256, o = {}) {
+  if (TM[key]) return TM[key];
+  const c = document.createElement('canvas'); c.width = w; c.height = h; seed = 7; draw(c.getContext('2d'), w, h);
+  const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 4;
+  return TM[key] = new T.MeshToonMaterial(Object.assign({ color: 0xffffff, gradientMap: grad, map: t }, o));
+}
+const wrapDot = (x, cx, cy, r, w, h) => { for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) { x.beginPath(); x.arc(cx + ox, cy + oy, r, 0, 7); x.fill(); } };
+const PT = {
+  stripes: (a, b, n = 5) => tm(`s${a}${b}${n}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.fillStyle = b; for (let i = 0; i < n; i++) x.fillRect(0, i * h / n, w, h / n / 2); }),
+  vstripes: (a, b, n = 6) => tm(`v${a}${b}${n}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.fillStyle = b; for (let i = 0; i < n; i++) x.fillRect(i * w / n, 0, w / n / 2, h); }),
+  diag: (a, b, n = 5) => tm(`d${a}${b}${n}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.strokeStyle = b; x.lineWidth = w / n / 2.4; for (let i = -n; i <= 2 * n; i++) { x.beginPath(); x.moveTo(i * w / n, 0); x.lineTo(i * w / n - w, h); x.stroke(); } }),
+  dots: (a, b, n = 4, r = 0.17) => tm(`o${a}${b}${n}${r}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.fillStyle = b; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) wrapDot(x, (i + (j % 2) * 0.5) * w / n, (j + 0.5) * h / n, r * w / n, w, h); }),
+  plaid: (a, b, c) => tm(`p${a}${b}${c}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.globalAlpha = 0.45; x.fillStyle = b; for (let i = 0; i < 2; i++) { x.fillRect(i * 128 + 20, 0, 46, h); x.fillRect(0, i * 128 + 20, w, 46); } x.globalAlpha = 1; x.fillStyle = c; for (let i = 0; i < 2; i++) { x.fillRect(i * 128 + 98, 0, 5, h); x.fillRect(0, i * 128 + 98, w, 5); } }),
+  check: (a, b, n = 4) => tm(`c${a}${b}${n}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.fillStyle = b; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if ((i + j) % 2) x.fillRect(i * w / n, j * h / n, w / n, h / n); }),
+  camo: () => tm('camo', (x, w, h) => { x.fillStyle = '#7b8a5a'; x.fillRect(0, 0, w, h); for (const col of ['#4f5d3a', '#a39a6b', '#3a3a2a']) { x.fillStyle = col; for (let i = 0; i < 9; i++) wrapDot(x, rnd() * w, rnd() * h, 14 + rnd() * 22, w, h); } }),
+  floral: (bg, c1, c2) => tm(`f${bg}${c1}${c2}`, (x, w, h) => { x.fillStyle = bg; x.fillRect(0, 0, w, h); for (let i = 0; i < 6; i++) { const cx = rnd() * w, cy = rnd() * h, col = i % 2 ? c1 : c2; x.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k / 5 * PI * 2; wrapDot(x, cx + Math.cos(a) * 16, cy + Math.sin(a) * 16, 13, w, h); } x.fillStyle = '#f2c230'; wrapDot(x, cx, cy, 7, w, h); } x.fillStyle = 'rgba(40,110,60,.8)'; for (let i = 0; i < 8; i++) wrapDot(x, rnd() * w, rnd() * h, 6, w, h); }),
+  denim: (a) => tm(`n${a}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.globalAlpha = 0.12; for (let i = 0; i < 260; i++) { x.fillStyle = rnd() > 0.5 ? '#fff' : '#000'; x.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 3, 1); } x.globalAlpha = 1; }),
+  hex: (a, b) => tm(`h${a}${b}`, (x, w, h) => { x.fillStyle = a; x.fillRect(0, 0, w, h); x.strokeStyle = b; x.lineWidth = 6; for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const cx = i * 64 + (j % 2) * 32, cy = j * 64; x.beginPath(); for (let k = 0; k <= 6; k++) { const ang = k / 6 * PI * 2; x.lineTo(cx + Math.cos(ang) * 30, cy + Math.sin(ang) * 30); } x.stroke(); } }),
+  quad: (cs) => tm(`q${cs}`, (x, w, h) => { cs.forEach((c, i) => { x.fillStyle = c; x.fillRect(i * w / cs.length, 0, w / cs.length, h); }); }),
+  jersey: (bg, fg, num) => tm(`j${bg}${fg}${num}`, (x, w, h) => {
+    x.fillStyle = bg; x.fillRect(0, 0, w, h); x.fillStyle = fg; x.fillRect(0, h * 0.06, w, h * 0.05);
+    x.font = `700 ${h * 0.5}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    for (const [u, s] of [[0.25, 1], [0.75, 1.15]]) { x.save(); x.translate(u * w, h * 0.5); x.scale(-s * 0.55, s); x.fillText(num, 0, 0); x.restore(); }
+  }, 512, 256),
+  straw: () => tm('straw', (x, w, h) => { x.fillStyle = '#e2c48a'; x.fillRect(0, 0, w, h); x.strokeStyle = '#b8955a'; x.lineWidth = 3; for (let i = 0; i < 64; i++) { x.beginPath(); x.moveTo(i * w / 64, 0); x.lineTo(i * w / 64, h); x.stroke(); } }),
+};
+
+/* ---------- 人貓本體 ---------- */
+const root = new T.Group(); scene.add(root);
+const char = new T.Group(); root.add(char);
+const base = new T.Group(); // 靜止姿勢的模型（衣服、迷你人貓都從這裡來）
+const W = '#ffffff';
+const TX0 = -0.12; // 臉的中心（原圖的臉偏左一點）
+
+/* 身體＋耳朵用距離場做成同一塊，交界處用平滑聯集補成圓角，不會有接縫 */
+const EARS = {
+  L: [[-1.505, 6.3], [-1.52, 7.15], [-1.51, 7.33], [-1.45, 7.46], [-1.34, 7.53], [-1.22, 7.51], [-1.12, 7.42], [-0.72, 6.68], [-0.62, 6.3]],
+  R: [[1.505, 6.3], [1.52, 7.2], [1.52, 7.37], [1.47, 7.48], [1.37, 7.52], [1.27, 7.48], [1.19, 7.38], [0.88, 6.68], [0.78, 6.3]],
+};
+function sdPoly(px, py, v) {
+  let d = (px - v[0][0]) ** 2 + (py - v[0][1]) ** 2, s = 1;
+  for (let i = 0, j = v.length - 1; i < v.length; j = i, i++) {
+    const ex = v[j][0] - v[i][0], ey = v[j][1] - v[i][1], wx = px - v[i][0], wy = py - v[i][1];
+    const t = clamp((wx * ex + wy * ey) / (ex * ex + ey * ey), 0, 1), bx = wx - ex * t, by = wy - ey * t;
+    d = Math.min(d, bx * bx + by * by);
+    const c1 = py >= v[i][1], c2 = py < v[j][1], c3 = ex * wy > ey * wx;
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) s = -s;
+  }
+  return s * Math.sqrt(d);
+}
+const rbox = (a, b, r) => Math.hypot(Math.max(a + r, 0), Math.max(b + r, 0)) + Math.min(Math.max(a + r, b + r), 0) - r;
+const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+const NB = 2 / BE;
+function bodySDF(x, y, z) {
+  const yc = clamp(y, BY0, BY1), hx = bHX(yc), hz = bHZ(yc), a = Math.abs(x - bCX(yc)) / hx, b = Math.abs(z) / hz;
+  const S = a ** NB + b ** NB, q = S ** (1 / NB);
+  let d2;
+  if (q < 1e-4) d2 = -Math.min(hx, hz);
+  else { const gS = S ** (1 / NB - 1), gx = gS * a ** (NB - 1) / hx, gz = gS * b ** (NB - 1) / hz; d2 = (q - 1) / Math.max(1e-4, Math.hypot(gx, gz)); }
+  LAST_D2 = d2;
+  const top = y > (BY0 + BY1) / 2;
+  return rbox(d2, top ? y - BY1 : BY0 - y, top ? 0.14 : 0.32);
+}
+let LAST_D2 = 0;
+/* 耳朵用平滑聯集接到頭頂，但不讓它往前後左右鼓出身體的輪廓 */
+function headEars(d, x, y, z) { const d2 = LAST_D2; return Math.max(smin(smin(d, earSDF(x, y, z, EARS.L), 0.3), earSDF(x, y, z, EARS.R), 0.3), d2); }
+function earSDF(x, y, z, poly) {
+  const th = lerp(bHZ(BY1) + 0.02, 0.2, sstep(6.62, 7.48, y));
+  return rbox(sdPoly(x, y, poly), Math.abs(z) - th, Math.min(0.12, th * 0.6));
+}
+function snets(F, nx, ny, nz, mn, h) {
+  const id = (i, j, k) => i + nx * (k + nz * j);
+  const cx = nx - 1, cy = ny - 1, cz = nz - 1, cell = new Int32Array(cx * cy * cz).fill(-1), cid = (i, j, k) => i + cx * (k + cz * j);
+  const CO = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+  const ED = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+  const pos = [], v = new Array(8);
+  const far = h * 3;
+  for (let j = 0; j < cy; j++) for (let k = 0; k < cz; k++) for (let i = 0; i < cx; i++) {
+    const f0 = F[id(i, j, k)]; if (f0 > far || f0 < -far) continue;
+    let neg = 0;
+    for (let c = 0; c < 8; c++) { v[c] = F[id(i + CO[c][0], j + CO[c][1], k + CO[c][2])]; if (v[c] < 0) neg++; }
+    if (neg === 0 || neg === 8) continue;
+    let sx = 0, sy = 0, sz = 0, n = 0;
+    for (const [a, b] of ED) {
+      if ((v[a] < 0) === (v[b] < 0)) continue;
+      const t = v[a] / (v[a] - v[b]);
+      sx += CO[a][0] + t * (CO[b][0] - CO[a][0]); sy += CO[a][1] + t * (CO[b][1] - CO[a][1]); sz += CO[a][2] + t * (CO[b][2] - CO[a][2]); n++;
+    }
+    cell[cid(i, j, k)] = pos.length / 3;
+    pos.push(mn[0] + (i + sx / n) * h, mn[1] + (j + sy / n) * h, mn[2] + (k + sz / n) * h);
+  }
+  const idx = [], P = i => new V(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+  const grad = p => {
+    const i = clamp(Math.round((p.x - mn[0]) / h), 1, nx - 2), j = clamp(Math.round((p.y - mn[1]) / h), 1, ny - 2), k = clamp(Math.round((p.z - mn[2]) / h), 1, nz - 2);
+    return new V(F[id(i + 1, j, k)] - F[id(i - 1, j, k)], F[id(i, j + 1, k)] - F[id(i, j - 1, k)], F[id(i, j, k + 1)] - F[id(i, j, k - 1)]);
+  };
+  const tri = (a, b, c) => {
+    const pa = P(a), pb = P(b), pc = P(c), nrm = new V().subVectors(pb, pa).cross(new V().subVectors(pc, pa));
+    if (nrm.lengthSq() < 1e-12) return;
+    if (nrm.dot(grad(pa.clone().add(pb).add(pc).multiplyScalar(1 / 3))) < 0) idx.push(a, c, b); else idx.push(a, b, c);
+  };
+  const quad = (a, b, c, d) => {
+    if (a < 0 || b < 0 || c < 0 || d < 0) return;
+    if (P(a).distanceToSquared(P(c)) < P(b).distanceToSquared(P(d))) { tri(a, b, c); tri(a, c, d); } else { tri(a, b, d); tri(b, c, d); }
+  };
+  for (let j = 1; j < cy; j++) for (let k = 1; k < cz; k++) for (let i = 1; i < cx; i++) {
+    const f0 = F[id(i, j, k)]; if (f0 > far || f0 < -far) continue;
+    const in0 = f0 < 0;
+    if (in0 !== (F[id(i + 1, j, k)] < 0)) quad(cell[cid(i, j - 1, k - 1)], cell[cid(i, j, k - 1)], cell[cid(i, j, k)], cell[cid(i, j - 1, k)]);
+    if (in0 !== (F[id(i, j + 1, k)] < 0)) quad(cell[cid(i - 1, j, k - 1)], cell[cid(i, j, k - 1)], cell[cid(i, j, k)], cell[cid(i - 1, j, k)]);
+    if (in0 !== (F[id(i, j, k + 1)] < 0)) quad(cell[cid(i - 1, j - 1, k)], cell[cid(i, j - 1, k)], cell[cid(i, j, k)], cell[cid(i - 1, j, k)]);
+  }
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+  return g;
+}
+function surfaceNets(fn, mn, mx, h) {
+  const nx = Math.ceil((mx[0] - mn[0]) / h) + 1, ny = Math.ceil((mx[1] - mn[1]) / h) + 1, nz = Math.ceil((mx[2] - mn[2]) / h) + 1;
+  const F = new Float32Array(nx * ny * nz);
+  let q = 0;
+  for (let j = 0; j < ny; j++) for (let k = 0; k < nz; k++) for (let i = 0; i < nx; i++) F[q++] = fn(mn[0] + i * h, mn[1] + j * h, mn[2] + k * h);
+  return snets(F, nx, ny, nz, mn, h);
+}
+
+const AR = 0.17, HS = [0.38, 0.24, 0.2];
+const handGeo = (d = 0, sc = 1) => blob((HS[0] + d) * sc, (HS[1] + d) * sc, (HS[2] + d) * sc, { e: 0.75 });
+/* 一串膠囊的距離場（手臂、腿共用） */
+function chain(pts, rads) {
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], e = new V().subVectors(b, a); const m = Math.max(rads[i], rads[i + 1]) + 0.4; segs.push({ a, e, l2: Math.max(1e-9, e.lengthSq()), r0: rads[i], r1: rads[i + 1], ylo: Math.min(a.y, b.y) - m, yhi: Math.max(a.y, b.y) + m }); }
+  const box = new T.Box3().setFromPoints(pts).expandByScalar(Math.max(...rads) + 0.4);
+  return (x, y, z) => {
+    if (x < box.min.x || x > box.max.x || y < box.min.y || y > box.max.y || z < box.min.z || z > box.max.z) return 9;
+    let d = 9;
+    for (const s of segs) {
+      if (y < s.ylo || y > s.yhi) continue;
+      const wx = x - s.a.x, wy = y - s.a.y, wz = z - s.a.z, t = clamp((wx * s.e.x + wy * s.e.y + wz * s.e.z) / s.l2, 0, 1);
+      const dd = Math.hypot(wx - s.e.x * t, wy - s.e.y * t, wz - s.e.z * t) - lerp(s.r0, s.r1, t);
+      if (dd < d) d = dd;
+    }
+    return d;
+  };
+}
+function ellSDF(x, y, z, H, R) {
+  const m = H.inv, dx = x - H.p[0], dy = y - H.p[1], dz = z - H.p[2];
+  const lx = (m[0] * dx + m[3] * dy + m[6] * dz) / R[0], ly = (m[1] * dx + m[4] * dy + m[7] * dz) / R[1], lz = (m[2] * dx + m[5] * dy + m[8] * dz) / R[2];
+  const k0 = Math.hypot(lx, ly, lz), k1 = Math.hypot(lx / R[0], ly / R[1], lz / R[2]);
+  return k1 < 1e-6 ? -Math.min(...R) : k0 * (k0 - 1) / k1;
+}
+
+/* ---------- 動作（姿勢）：手腳的骨架曲線，衣服都會跟著曲線重新生成 ---------- */
+const FD0 = new V(-0.82, 0, 0.57), FW = new V(-0.25, 0, 0.97);
+const legStd = (x0, x1, fd = FD0, z = [0, 0, 0], ya = 0.25) => [[x0, 3.55, 0], [lerp(x0, x1, 0.4), 2.35, z[0]], [lerp(x0, x1, 0.8), 1.05, z[1]], [x1, ya + 0.23, z[2]], [x1 + fd.x * 0.16, ya + 0.03, z[2] + fd.z * 0.16], [x1 + fd.x * 0.55, ya, z[2] + fd.z * 0.55]];
+const bentLeg = (x0, x1, fd) => [[x0, 3.55, 0], [lerp(x0, x1, 0.2), 2.6, 0.38], [lerp(x0, x1, 0.5), 1.8, 0.2], [lerp(x0, x1, 0.8), 1.25, -0.3], [x1, 1.02, -0.4], [x1 + fd.x * 0.16, 0.84, -0.4 + fd.z * 0.16], [x1 + fd.x * 0.55, 0.8, -0.4 + fd.z * 0.55]];
+const LEGS0 = { L: { pts: legStd(-1.07, -1.07), fd: FD0 }, R: { pts: legStd(1.04, 0.95), fd: FD0 } };
+const restArm = (S, up, fore) => { const s = new V(...S), u = new V(...up).normalize(), fo = new V(...fore).normalize(), E = s.clone().addScaledVector(u, 1.0), Wp = E.clone().addScaledVector(fo, 0.8), H = Wp.clone().addScaledVector(fo, 0.38); return { arm: [s, s.clone().lerp(E, 0.5), E, E.clone().lerp(Wp, 0.5), Wp].map(v => v.toArray()), hand: H.toArray(), r: [0, 0, Math.atan2(fo.y, fo.x)] }; };
+const REST = { L: restArm([-1.25, 5.42, 0.05], [-0.9, -0.42, 0], [-0.93, -0.36, 0]), R: restArm([1.22, 5.4, 0.25], [0.9, -0.42, 0], [0.93, -0.36, 0]), legs: LEGS0 };
+const FL = new V(-0.4, 0, 0.92);
+const AKIMBO = {
+  L: { arm: [[-1.05, 5.42, 0.66], [-1.55, 5.2, 0.6], [-2.06, 4.5, 0.42], [-1.75, 4.1, 0.32], [-1.5, 3.95, 0.28]], hand: [-1.68, 3.76, 0.3], r: [0, 0, 0.73] },
+  R: { arm: [[1.05, 5.42, 0.66], [1.55, 5.2, 0.6], [2.06, 4.5, 0.42], [1.75, 4.1, 0.32], [1.5, 3.95, 0.28]], hand: [1.68, 3.76, 0.3], r: [0, 0, -0.73] },
+};
+const DOWN = {
+  L: { arm: [[-1.3, 5.4, 0.05], [-1.6, 5.0, 0.06], [-1.85, 4.5, 0.08], [-1.95, 4.15, 0.1], [-2.02, 3.85, 0.12]], hand: [-2.08, 3.5, 0.12], r: [0, 0, 1.5] },
+  R: { arm: [[1.3, 5.4, 0.05], [1.6, 5.0, 0.06], [1.85, 4.5, 0.08], [1.95, 4.15, 0.1], [2.02, 3.85, 0.12]], hand: [2.08, 3.5, 0.12], r: [0, 0, -1.5] },
+};
+const UP = {
+  L: { arm: [[-1.25, 5.42, 0.05], [-1.75, 5.7, 0.08], [-2.15, 6.3, 0.1], [-2.35, 6.9, 0.12]], hand: [-2.42, 7.25, 0.12], r: [0, 0, 1.89] },
+  R: { arm: [[1.25, 5.42, 0.05], [1.75, 5.7, 0.08], [2.15, 6.3, 0.1], [2.35, 6.9, 0.12]], hand: [2.42, 7.25, 0.12], r: [0, 0, 1.25] },
+};
+const WAVE_R = { arm: [[1.25, 5.42, 0.05], [1.75, 5.6, 0.1], [2.15, 6.2, 0.15], [2.28, 6.85, 0.18]], hand: [2.3, 7.2, 0.2], r: [0, 0, 1.4] };
+const THINK_R = { arm: [[1.3, 5.3, 0.15], [1.68, 4.68, 0.5], [1.15, 4.8, 1.02], [0.5, 5.05, 1.05]], hand: [0.18, 5.12, 1.0], r: [0, 0, 0.9] };
+const DISCO = { L: { arm: [[-1.25, 5.35, 0.05], [-1.7, 4.95, 0.1], [-2.15, 4.5, 0.15], [-2.55, 4.05, 0.18]], hand: [-2.78, 3.8, 0.2], r: [0, 0, 0.8] }, R: { arm: [[1.25, 5.42, 0.05], [1.75, 5.9, 0.08], [2.2, 6.45, 0.1], [2.6, 7.0, 0.12]], hand: [2.8, 7.3, 0.12], r: [0, 0, 0.95] } };
+const FLAM = { L: { arm: [[-1.25, 5.4, 0.05], [-1.8, 5.45, 0.05], [-2.35, 5.5, 0.05], [-2.8, 5.55, 0.05]], hand: [-3.1, 5.58, 0.05], r: [0, 0, 0.08] }, R: { arm: [[1.25, 5.4, 0.05], [1.8, 5.45, 0.05], [2.35, 5.5, 0.05], [2.8, 5.55, 0.05]], hand: [3.1, 5.58, 0.05], r: [0, 0, -0.08] } };
+const XA = new V(1, 0, 0), ZA = new V(0, 0, 1);
+/* 以肩膀為軸轉動整隻手臂（含手掌方向） */
+function rotArm(a, axis, ang) {
+  const P = new V(...a.arm[0]), q = new T.Quaternion().setFromAxisAngle(axis, ang);
+  const rp = p => new V(...p).sub(P).applyQuaternion(q).add(P).toArray();
+  const qh = new T.Quaternion().setFromEuler(new T.Euler(...a.r)), e = new T.Euler().setFromQuaternion(q.clone().multiply(qh));
+  return { arm: a.arm.map(rp), hand: rp(a.hand), r: [e.x, e.y, e.z] };
+}
+function walkAt(ph) {
+  const s = Math.sin(ph * PI * 2), c = Math.cos(ph * PI * 2);
+  return {
+    L: rotArm(DOWN.L, XA, 0.5 * s), R: rotArm(DOWN.R, XA, -0.5 * s),
+    legs: { L: { pts: legStd(-1.07, -1.07, FW, [0.22 * s, 0.55 * s, 0.62 * s], 0.25 + 0.24 * Math.max(0, c)), fd: FW }, R: { pts: legStd(1.04, 0.95, FW, [-0.22 * s, -0.55 * s, -0.62 * s], 0.25 + 0.24 * Math.max(0, -c)), fd: FW } },
+  };
+}
+const SPEED = { wave: 1.2, up: 0.8, think: 0.6, disco: 1.0, walk: 0.9, flamingo: 0.5 };
+const POSES = [
+  { id: 'akimbo', name: '插腰', note: '原本的樣子', L: AKIMBO.L, R: AKIMBO.R },
+  { id: 'stand', name: '立正', note: '雙手放下', L: DOWN.L, R: DOWN.R },
+  { id: 'wave', name: '揮手', note: '嗨！', frames: 8, fps: 9, L: AKIMBO.L, R: WAVE_R, at: ph => ({ R: rotArm(WAVE_R, ZA, 0.38 * Math.sin(ph * PI * 2)) }) },
+  { id: 'up', name: '舉雙手', note: 'Put your hands up', frames: 8, fps: 7, L: UP.L, R: UP.R, at: ph => { const a = 0.22 * Math.sin(ph * PI * 2); return { L: rotArm(UP.L, ZA, a), R: rotArm(UP.R, ZA, a) }; } },
+  { id: 'salute', name: '敬禮', note: '右手放額頭', L: DOWN.L, R: { arm: [[1.25, 5.4, 0.1], [1.85, 5.45, 0.3], [2.05, 5.75, 0.55], [1.5, 6.1, 0.85], [1.1, 6.22, 0.92]], hand: [0.85, 6.3, 0.95], r: [0, 0, 0.25] } },
+  { id: 'cross', name: '抱胸', note: '雙手交叉', L: { arm: [[-1.3, 5.3, 0.1], [-1.68, 4.85, 0.4], [-1.25, 4.5, 0.98], [-0.2, 4.5, 1.04], [0.45, 4.55, 1.0]], hand: [0.75, 4.6, 0.95], r: [0, 0, 0.1] }, R: { arm: [[1.3, 5.3, 0.1], [1.68, 4.95, 0.4], [1.25, 4.74, 1.14], [0.2, 4.74, 1.2], [-0.45, 4.78, 1.14]], hand: [-0.78, 4.82, 1.06], r: [0, 0, -0.1] } },
+  { id: 'point', name: '指前方', note: '往那邊走', L: AKIMBO.L, R: { arm: [[1.25, 5.3, 0.2], [1.65, 5.22, 0.75], [1.9, 5.15, 1.4], [2.0, 5.1, 1.85]], hand: [2.03, 5.08, 2.18], r: [0, -1.45, 0] } },
+  { id: 'think', name: '思考', note: '手托下巴', frames: 6, fps: 5, at: ph => ({ R: rotArm(THINK_R, ZA, 0.05 * Math.sin(ph * PI * 2)), dyv: 0 }), L: { arm: [[-1.3, 5.2, 0.1], [-1.6, 4.6, 0.45], [-0.9, 4.3, 1.0], [0.3, 4.4, 1.0]], hand: [0.72, 4.52, 0.98], r: [0, 0, 0.3] }, R: THINK_R },
+  { id: 'disco', name: '迪斯可', note: '一手朝天', frames: 8, fps: 8, L: DISCO.L, R: DISCO.R, at: ph => { const a = 0.28 * Math.sin(ph * PI * 2); return { L: rotArm(DISCO.L, ZA, a), R: rotArm(DISCO.R, ZA, a) }; }, dy: ph => 0.09 * Math.abs(Math.sin(ph * PI * 2)) },
+  { id: 'walk', name: '走路', note: '原地踏步走', frames: 6, fps: 7, legsAnim: true, L: DOWN.L, R: DOWN.R, at: walkAt, dy: ph => 0.06 * Math.abs(Math.cos(ph * PI * 2)) },
+  { id: 'flamingo', name: '金雞獨立', note: '單腳站', wide: true, frames: 8, fps: 6, at: ph => { const a = 0.13 * Math.sin(ph * PI * 2); return { L: rotArm(FLAM.L, ZA, a), R: rotArm(FLAM.R, ZA, a) }; }, L: FLAM.L, R: FLAM.R, legs: { L: LEGS0.L, R: { pts: [[1.04, 3.55, 0], [1.02, 2.75, 0.45], [1.0, 2.2, 0.95], [0.98, 1.55, 0.88], [0.97, 1.28, 0.82], [0.97 + FL.x * 0.16, 1.08, 0.82 + FL.z * 0.16], [0.97 + FL.x * 0.55, 1.05, 0.82 + FL.z * 0.55]], fd: FL, knee: [1.0, 2.2, 0.95] } } },
+  { id: 'jump', name: '開心跳', note: '跳起來', anim: 'jump', L: UP.L, R: UP.R, legs: { L: { pts: bentLeg(-1.07, -1.07, FW), fd: FW }, R: { pts: bentLeg(1.04, 0.97, FW), fd: FW } } },
+];
+let pose = POSES[0];
+const ARMS = {}, HANDS = {}, armC = {}, LEG = {}, LEGSDF = {};
+function applyPose(p) {
+  for (const k of ['L', 'R']) {
+    const a = p[k]; ARMS[k] = a.arm; armC[k] = curve(a.arm);
+    const inv = new T.Matrix3().setFromMatrix4(new T.Matrix4().makeRotationFromEuler(new T.Euler(...a.r))).transpose().elements;
+    HANDS[k] = { p: a.hand, r: a.r, rz: a.r[2], inv };
+    const lg = (p.legs || LEGS0)[k], c = curve(lg.pts);
+    const r = k === 'L' ? t => 0.29 - 0.03 * t : t => 0.31 - 0.06 * t;
+    const tAt = y => { for (let t = 0; t <= 1; t += 0.004) if (c.getPointAt(t).y <= y) return t; return 1; };
+    const fy = Math.min(...lg.pts.map(q => q[1])) - 0.25;
+    LEG[k] = { c, r, tAt, fd: lg.fd, fy, tAnkle: tAt(0.6 + fy), pts: lg.pts };
+    const t0 = tAt(3.2), n = 16, pts = [], rads = [];
+    for (let i = 0; i <= n; i++) { const t = lerp(t0, 1, i / n); pts.push(c.getPointAt(t)); rads.push(r(t)); }
+    LEGSDF[k] = chain(pts, rads);
+  }
+}
+applyPose(REST);
+const LEG_K = 0.32;
+function bodyLegsSDF(x, y, z) {
+  const b = y > 2.2 ? bodySDF(x, y, z) : BY0 - y;
+  if (y > 3.9) return b;
+  return smin(b, Math.min(LEGSDF.L(x, y, z), LEGSDF.R(x, y, z)), LEG_K);
+}
+function catSDF(x, y, z) {
+  let d = bodyLegsSDF(x, y, z);
+  if (y > 6.0) d = headEars(d, x, y, z);
+  return d;
+}
+function disposeTree(o) { o.traverse(m => { if (m.isMesh && m.geometry && !m.userData.keep) m.geometry.dispose(); }); }
+function clearGroup(g) { [...g.children].forEach(c => { if (!c.userData.noDispose) disposeTree(c); g.remove(c); }); }
+function legBox() {
+  const all = [...LEG.L.pts, ...LEG.R.pts];
+  return { x0: Math.min(-1.95, ...all.map(p => p[0] - 0.45)), x1: Math.max(1.75, ...all.map(p => p[0] + 0.45)), y0: Math.min(-0.06, ...all.map(p => p[1] - 0.4)), z0: Math.min(-0.95, ...all.map(p => p[2] - 0.45)), z1: Math.max(0.95, ...all.map(p => p[2] + 0.45)) };
+}
+/* 身體上半部的距離場只算一次，換動作時只重算腿 */
+const BG = { mn: [-1.95, -0.06, -1.75], h: 0.042 };
+BG.nx = Math.ceil((1.9 - BG.mn[0]) / BG.h) + 1; BG.ny = Math.ceil((7.72 - BG.mn[1]) / BG.h) + 1; BG.nz = Math.ceil((1.75 - BG.mn[2]) / BG.h) + 1; BG.jLow = Math.ceil((3.95 - BG.mn[1]) / BG.h) + 1;
+let BODYF = null, CURF = null;
+function bodyField() {
+  if (BODYF) return BODYF;
+  const { nx, ny, nz, mn, h } = BG, F = new Float32Array(nx * ny * nz); let q = 0;
+  for (let j = 0; j < ny; j++) { const y = mn[1] + j * h; for (let k = 0; k < nz; k++) { const z = mn[2] + k * h; for (let i = 0; i < nx; i++) {
+    const x = mn[0] + i * h; let d = y > 2.2 ? bodySDF(x, y, z) : BY0 - y;
+    if (y > 6.0) d = headEars(d, x, y, z);
+    F[q++] = d;
+  } } }
+  return BODYF = F;
+}
+function catField() {
+  const B = bodyField(), F = new Float32Array(B), { nx, nz, mn, h } = BG; let q = 0;
+  for (let j = 0; j < BG.jLow; j++) { const y = mn[1] + j * h; for (let k = 0; k < nz; k++) { const z = mn[2] + k * h; for (let i = 0; i < nx; i++, q++) {
+    const l = Math.min(LEGSDF.L(mn[0] + i * h, y, z), LEGSDF.R(mn[0] + i * h, y, z));
+    if (l < 8) F[q] = smin(B[q], l, LEG_K);
+  } } }
+  return F;
+}
+function bodyMesh(F) { return mk(wobble(snets(F, BG.nx, BG.ny, BG.nz, BG.mn, BG.h), false), W); }
+/* 手臂和手掌合成一塊，手腕不會斷開 */
+function armsGroup() {
+  const armsG = new T.Group();
+  for (const k of ['L', 'R']) {
+    const H = HANDS[k], pts = armC[k].getSpacedPoints(14); pts.push(new V(...H.p));
+    const ch = chain(pts, pts.map(() => AR));
+    const sdf = (x, y, z) => smin(ch(x, y, z), ellSDF(x, y, z, H, HS), 0.12);
+    const bb = new T.Box3().setFromPoints(pts).expandByScalar(0.42);
+    armsG.add(mk(wobble(surfaceNets(sdf, bb.min.toArray(), bb.max.toArray(), 0.036), false), W));
+  }
+  return armsG;
+}
+function cloneCat() { return base.clone(true); }
+function ellRing(cx, y, cz, r) { const pts = []; for (let i = 0; i < 96; i++) { const a = i / 96 * PI * 2; pts.push(new V(cx + r * Math.cos(a), y, cz + r * Math.sin(a))); } return new T.Mesh(ttube(wobblePts(pts), 0.02, { closed: true, seg: 96, N: 6 }), INK); }
+/* 尾巴 */
+const TB = new V(1.25, 3.3, -0.35);
+const tail = new T.Group(); tail.position.copy(TB); base.add(tail);
+const TAIL = curve([[0, 0, 0], [0.6, 0.2, -0.2], [1.2, 0.75, -0.25], [1.45, 1.4, -0.2], [1.35, 1.85, -0.15]]);
+tail.add(mk(wobble(ttube(TAIL, t => 0.27 + 0.07 * Math.sin(PI * t) - 0.02 * t, { cap0: true, cap1: true })), W));
+/* 臉 */
+const EYE = { L: [-0.72, 5.88], R: [0.48, 5.88] };
+const eyes = [];
+for (const k of ['L', 'R']) { const e = at(new T.Mesh(sph(0.13), BLACK), EYE[k][0], EYE[k][1], 0.765); e.scale.z = 0.42; eyes.push(e); base.add(e); }
+const mouthMesh = mk(puff([[-0.44, 5.585], [0.3, 5.605], [0.25, 5.53], [0.1, 5.465], [-0.08, 5.45], [-0.25, 5.47], [-0.38, 5.53]], 0.025, { cz: 0.758, e: 0.5 }), BLACK, false); base.add(mouthMesh);
+/* 影子 */
+const shadow = new T.Mesh(new T.CircleGeometry(2.1, 48), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.08, depthWrite: false }));
+shadow.rotation.x = -PI / 2; shadow.scale.y = 0.5; shadow.position.set(0.2, 0.004, 0); root.add(shadow);
+
+/* ---------- 骨架：身體和衣服都用同一副骨頭帶動，動作可以平滑過渡 ---------- */
+CURF = (() => { const F = catField(); base.add(bodyMesh(F)); return F.slice(0, BG.nx * BG.nz * BG.jLow); })();
+const armsRaw = armsGroup(); base.add(armsRaw);
+/* 手腳都是一串小骨頭，彎起來像橡皮管一樣圓順 */
+const MSEG = 6;
+function armPoly(a) { const c = curve(a.arm), p = []; for (let i = 0; i <= MSEG; i++) p.push(c.getPointAt(i / MSEG)); p.push(new V(...a.hand)); return p; }
+function legPoly(lg) { const c = curve(lg.pts.slice(0, lg.pts.length - 2)), p = []; for (let i = 0; i <= MSEG; i++) p.push(c.getPointAt(i / MSEG)); p.push(new V(...lg.pts[lg.pts.length - 1])); return p; }
+const TB2 = TB.clone().add(new V(1.2, 0.75, -0.25)), TTIP = TB.clone().add(new V(1.35, 1.85, -0.15));
+const RP = { armL: armPoly(REST.L), armR: armPoly(REST.R), legL: legPoly(LEGS0.L), legR: legPoly(LEGS0.R), tail: [TB, TB2, TTIP] };
+const bones = {}, boneList = [], LIMB = {};
+function mkBone(name, parent, wp) {
+  const b = new T.Bone(); b.name = name; b.userData.rest = wp.clone();
+  b.position.copy(wp).sub(parent ? parent.userData.rest : new V());
+  if (parent) parent.add(b); bones[name] = b; boneList.push(b); return b;
+}
+mkBone('root', null, new V()); char.add(bones.root);
+mkBone('hips', bones.root, new V(0, 2.9, 0)); mkBone('chest', bones.hips, new V(0, 3.9, 0));
+for (const part of ['armL', 'armR', 'legL', 'legR', 'tail']) {
+  const P = RP[part], names = []; let prev = part.startsWith('arm') ? bones.chest : bones.hips;
+  for (let i = 0; i < P.length - 1; i++) { prev = mkBone(part + i, prev, P[i]); names.push(part + i); }
+  LIMB[part] = { names, idx: [] };
+}
+char.updateMatrixWorld(true);
+const skeleton = new T.Skeleton(boneList);
+const bi = n => boneList.indexOf(bones[n]);
+for (const part in LIMB) LIMB[part].idx = LIMB[part].names.map(bi);
+const ALL = ['armL', 'armR', 'legL', 'legR', 'tail'];
+function limbW(p, part) {
+  const P = RP[part], idx = LIMB[part].idx, n = P.length - 1; let best = 1e9, bj = 0, bt = 0;
+  for (let j = 0; j < n; j++) {
+    const e = new V().subVectors(P[j + 1], P[j]), w = new V().subVectors(p, P[j]), t = clamp(w.dot(e) / e.lengthSq(), 0, 1);
+    const d = w.addScaledVector(e, -t).length(); if (d < best) { best = d; bj = j; bt = t; }
+  }
+  const last = bj === n - 1, r = part === 'tail' ? 0.3 : part.startsWith('arm') ? (last ? 0.28 : AR) : (last ? 0.26 : 0.3);
+  const W = 1 / (Math.max(0, best - r) + 0.03) ** 4, c = bj + bt - 0.5, b0 = Math.floor(c), f = sstep(0, 1, c - b0);
+  return [[idx[clamp(b0, 0, n - 1)], W * (1 - f)], [idx[clamp(b0 + 1, 0, n - 1)], W * f]];
+}
+function skinWeights(geo, parts) {
+  const pos = geo.attributes.position, n = pos.count, SI = new Uint16Array(n * 4), SW = new Float32Array(n * 4), p = new V();
+  const hipsI = bi('hips'), chestI = bi('chest');
+  for (let i = 0; i < n; i++) {
+    p.fromBufferAttribute(pos, i);
+    const wT = 1 / (Math.max(0, bodySDF(p.x, p.y, p.z)) + 0.03) ** 4, cs = sstep(3.2, 4.5, p.y);
+    const m = new Map([[hipsI, wT * (1 - cs)], [chestI, wT * cs]]);
+    for (const part of parts) for (const [b, w] of limbW(p, part)) m.set(b, (m.get(b) || 0) + w);
+    const c = [...m].sort((a, b) => b[1] - a[1]);
+    let tot = 0; for (let j = 0; j < 4; j++) tot += c[j] ? c[j][1] : 0;
+    for (let j = 0; j < 4; j++) { SI[i * 4 + j] = c[j] ? c[j][0] : 0; SW[i * 4 + j] = c[j] ? c[j][1] / tot : 0; }
+  }
+  geo.setAttribute('skinIndex', new T.BufferAttribute(SI, 4)); geo.setAttribute('skinWeight', new T.BufferAttribute(SW, 4));
+}
+/* 把一組靜止姿勢的模型轉成跟著骨架動的模型 */
+function skinify(obj, parts) {
+  const out = new T.Group(); obj.updateMatrixWorld(true);
+  obj.traverse(m => {
+    if (!m.isMesh || m.material === inkMat) return;
+    const geo = m.geometry.clone().applyMatrix4(m.matrixWorld); skinWeights(geo, parts);
+    const sm = new T.SkinnedMesh(geo, m.material); sm.frustumCulled = false; out.add(sm);
+    if (m.children.some(c => c.material === inkMat)) { const hm = new T.SkinnedMesh(geo, inkMat); hm.frustumCulled = false; out.add(hm); }
+  });
+  return out;
+}
+function bindAll(g) {
+  const r = root.rotation.y, pz = char.position.clone(), sc = char.scale.clone();
+  root.rotation.y = 0; char.position.set(0, 0, 0); char.scale.set(1, 1, 1); scene.updateMatrixWorld(true);
+  g.traverse(m => { if (m.isSkinnedMesh) m.bind(skeleton, m.matrixWorld.clone()); });
+  root.rotation.y = r; char.position.copy(pz); char.scale.copy(sc);
+}
+const skinBody = new T.Group(); char.add(skinBody);
+{
+  const bodyRaw = base.children[base.children.indexOf(armsRaw) - 1];
+  skinBody.add(skinify(grp(bodyRaw.clone(true)), ['legL', 'legR']));
+  armsRaw.children.forEach((m, i) => skinBody.add(skinify(grp(m.clone(true)), [i ? 'armR' : 'armL'])));
+  skinBody.add(skinify(grp(tail.clone(true)), ['tail']));
+  bindAll(skinBody);
+}
+/* 臉和配件跟著胸口那根骨頭動 */
+const rigidG = new T.Group(); rigidG.position.set(0, -3.9, 0); bones.chest.add(rigidG);
+const eyesLive = eyes.map(e => { const c = e.clone(); rigidG.add(c); return c; });
+rigidG.add(mouthMesh.clone());
+
+/* ---------- 依身形生成的衣物零件 ---------- */
+function torso(mat, { y0 = 3.62, y1 = 5.42, d = 0.05, dFn = null, mod = null, unitU = false, hem0 = true, hem1 = true } = {}) {
+  const D = y => dFn ? dFn(y) : d, E = prof({ y0, y1, d, dFn, mod, n: 30 });
+  if (unitU) E.forEach(e => e.vu = (e.y - y0) / (y1 - y0));
+  const rings = bodyRings(E); if (unitU) rings.forEach((r, i) => r.vu = E[i].vu);
+  const g = grp(mk(wobble(ringGeo(rings, { N: 72, unitU })), mat));
+  if (hem0) g.add(hem(y0, D(y0))); if (hem1) g.add(hem(y1, D(y1)));
+  return g;
+}
+function headShell(mat, { y0 = 6.25, d = 0.05, rise = 0.25, r1 = 0.3, unitU = false, mod = null } = {}) {
+  const E = prof({ y0, y1: BY1 + rise, d, r1, close1: true, n: 14, mod }), rings = bodyRings(E);
+  if (unitU) rings.forEach((r, i) => r.vu = i / (rings.length - 1));
+  return grp(mk(wobble(ringGeo(rings, { N: 72, unitU })), mat), hem(y0, d));
+}
+function brimLoop(y, d0, w, th, droop, mat) {
+  const E = [{ y: y - th, d: d0 }, { y: y - droop - th * 0.5, d: d0 + w * 0.92 }, { y: y - droop - th * 0.15, d: d0 + w }, { y: y - droop + th * 0.25, d: d0 + w }, { y: y - droop + th * 0.5, d: d0 + w * 0.92 }, { y, d: d0 }];
+  return mk(ringGeo(bodyRings(E), { N: 72, loop: true }), mat);
+}
+function sleeves(mat, t1, d = 0.05, { t0 = 0, rFn = null } = {}) {
+  const g = new T.Group();
+  for (const k of ['L', 'R']) {
+    const c = subCurve(armC[k], t0, t1), R = rFn ? u => AR + rFn(u) : AR + d;
+    g.add(mk(wobble(ttube(c, R, { seg: 32 })), mat));
+    g.add(rimAt(c, 1, rFn ? AR + rFn(1) : AR + d));
+    if (t0 > 0) g.add(rimAt(c, 0, rFn ? AR + rFn(0) : AR + d));
+  }
+  return g;
+}
+/* 褲子：把身體＋腿的距離場往外推一層，再切出腰到褲管那一段 */
+function pantsBase(mat, { y1 = 3.8, d = 0.08, legY = null, ld = 0.05, flare = null } = {}) {
+  const yE = { L: legY ? legY + LEG.L.fy : 2.55, R: legY ? legY + LEG.R.fy : 2.55 }, yEnd = Math.min(yE.L, yE.R);
+  const D = (y, k) => { const u = clamp((3.6 - y) / Math.max(0.01, 3.6 - yE[k]), 0, 1); return lerp(ld + (flare ? flare(u) : 0), d, sstep(2.55, 3.0, y)); };
+  const { nx, nz, mn, h, jLow } = BG, F = CURF, Pf = new Float32Array(nx * nz * jLow); let q = 0;
+  for (let j = 0; j < jLow; j++) { const y = mn[1] + j * h; for (let k = 0; k < nz; k++) for (let i = 0; i < nx; i++, q++) {
+    const kk = mn[0] + i * h < 0 ? 'L' : 'R'; Pf[q] = Math.max(F[q] - D(y, kk), y - y1, yE[kk] - y);
+  } }
+  const g = grp(mk(wobble(snets(Pf, nx, jLow, nz, mn, h), false), mat), hem(y1, d + 0.015));
+  if (legY) for (const k of ['L', 'R']) { const L = LEG[k], t = L.tAt(yE[k]), p = L.c.getPointAt(t); g.add(ellRing(p.x, yE[k] + 0.01, p.z, L.r(t) + D(yE[k], k))); }
+  return g;
+}
+function shoesG(mat, ctx, { y0 = 0.55, d = 0.05, toe = 1, extra } = {}) {
+  const g = new T.Group();
+  for (const k of ['L', 'R']) {
+    const L = LEG[k], t0 = L.tAt(y0 + L.fy), c = subCurve(L.c, t0, 1);
+    const pd = ctx.pleg && ctx.pleg.y1 < y0 + 0.05 ? ctx.pleg.d + 0.02 : 0;
+    const R = u => (L.r(lerp(t0, 1, u)) + d + pd) * (1 + (toe - 1) * clamp((u - 0.45) / 0.55, 0, 1) ** 2);
+    g.add(mk(wobble(ttube(c, R, { seg: 40, cap1: true })), mat)); g.add(rimAt(c, 0, R(0)));
+    if (extra) extra(g, k, c, R);
+  }
+  return g;
+}
+function footFrame(k) {
+  const L = LEG[k], FD = L.fd, A = L.c.getPointAt(L.tAt(0.55 + L.fy)), Tp = L.c.getPointAt(1);
+  const back = new V(A.x, L.fy, A.z).addScaledVector(FD, -0.3), front = new V(Tp.x, L.fy, Tp.z).addScaledVector(FD, 0.27);
+  return { mid: back.clone().add(front).multiplyScalar(0.5), len: back.distanceTo(front) / 2, ry: Math.atan2(FD.x, FD.z), back, front, y: L.fy };
+}
+function sole(k, mat, th = 0.07, wid = 0.34, extra = 0) {
+  const F = footFrame(k);
+  return at(mk(blob(wid, th / 2, F.len + extra, { e: 0.45 }), mat), F.mid.x, F.y + th / 2 - 0.02, F.mid.z, 0, F.ry, 0);
+}
+function glovesG(mat, ctx, { d = 0.05, sc = 1, tc = 0.86, cd = 0.05, cuffMat, only, extra, flare = 0 } = {}) {
+  const g = new T.Group();
+  for (const k of ['L', 'R']) {
+    if (only && only !== k) continue;
+    if (ctx.thumb && !only && k === 'L') continue;
+    const H = HANDS[k], hm = at(mk(handGeo(d, sc), mat), ...H.p, ...H.r); g.add(hm);
+    if (extra) extra(hm, k);
+    if (tc < 1) {
+      const c = subCurve(armC[k], tc, 1), so = ctx.sleeve && ctx.sleeve.t1 > tc ? ctx.sleeve.d + 0.02 : 0;
+      const R = u => AR + so + cd + flare * (1 - u);
+      g.add(mk(wobble(ttube(c, R, { seg: 20 })), cuffMat || mat)); g.add(rimAt(c, 0, R(0)));
+    }
+  }
+  return g;
+}
+function bow(mat, s = 1) {
+  const wing = [[0, 0.05], [0.3, 0.18], [0.35, 0], [0.3, -0.18], [0, -0.05]];
+  const r = at(mk(puff(wing, 0.06, { e: 0.6 }), mat), 0.05, 0, 0), l = at(mk(puff(wing, 0.06, { e: 0.6 }), mat), -0.05, 0, 0);
+  l.scale.x = -1;
+  const g = grp(r, l, at(mk(blob(0.08, 0.1, 0.08, { e: 0.7 }), mat), 0, 0, 0.03)); g.scale.setScalar(s); return g;
+}
+const frontZ = (ctx, y) => bHZ(y) + ctx.surfD(y);
+
+/* ---------- 物件清單（每類 15 款） ---------- */
+const C = { red: '#d9453a', blue: '#3155ff', navy: '#2a3150', yellow: '#f2c230', mustard: '#d9a82b', green: '#5f9d5a', sage: '#93ad8a', pink: '#f29bb4', lilac: '#b9a3e3', orange: '#f08a3c', brown: '#7a4b2c', tan: '#d8b48a', khaki: '#c8b27d', gold: '#e0b23f', silver: '#c9cdd4', black: '#2b2c31', white: '#fbfbfb', denim: '#4f72a8', cream: '#f4ecd8', teal: '#3aa6a0', gray: '#9aa0a8', sky: '#8fc7ee', wood: '#a8794a', mint: '#a6dcc4' };
+const glass = (c, op) => new T.MeshBasicMaterial({ color: new T.Color(c), transparent: true, opacity: op, side: T.DoubleSide, depthWrite: false });
+
+/* 眼鏡共用 */
+const GZ = 0.82, GY = 5.9;
+function frame(path, cx, cy, r, mat, z = GZ) { return mk(ttube(to3(shift(path, cx, cy), z), r, { closed: true, seg: Math.max(56, path.length * 2), N: 10 }), mat); }
+function lens(path, cx, cy, mat, z = GZ - 0.01) { return at(flat(path, mat), cx, cy, z); }
+function temples(mat, wL, wR, r = 0.026, y = GY) {
+  return grp(mk(ttube([[EYE.L[0] - wL, y, GZ], [-1.32, y, GZ - 0.02], [-1.53, y, 0.55], [-1.58, y, 0.1], [-1.56, y, -0.25]].map(p => new V(...p)), r, { cap1: true, seg: 40, N: 8 }), mat),
+             mk(ttube([[EYE.R[0] + wR, y, GZ], [1.32, y, GZ - 0.02], [1.53, y, 0.55], [1.58, y, 0.1], [1.56, y, -0.25]].map(p => new V(...p)), r, { cap1: true, seg: 40, N: 8 }), mat));
+}
+function bridge(mat, x0, x1, r = 0.026, y = GY) { return mk(ttube([new V(x0, y, GZ), new V((x0 + x1) / 2, y + 0.07, GZ + 0.02), new V(x1, y, GZ)], r, { seg: 16, N: 8 }), mat); }
+function specs(path, { r = 0.03, mat, lensMat, w = 0.28, bridgeR }) {
+  const g = new T.Group();
+  for (const k of ['L', 'R']) { g.add(frame(path, EYE[k][0], EYE[k][1] + 0.02, r, mat)); if (lensMat) g.add(lens(path, EYE[k][0], EYE[k][1] + 0.02, lensMat)); }
+  g.add(bridge(mat, EYE.L[0] + w, EYE.R[0] - w, bridgeR ?? r));
+  g.add(temples(mat, w, w, Math.min(r, 0.03)));
+  return g;
+}
+function strap(mat, y = 5.9, d = 0.035, h = 0.15) { return torso(mat, { y0: y - h / 2, y1: y + h / 2, d, hem0: false, hem1: false }); }
+
+/* 領帶共用 */
+function tieG(ctx, mat, blade, knotMat) {
+  const z = frontZ(ctx, 4.6) + 0.04;
+  return grp(mk(puff(shift(blade, TX0, 0), 0.035, { cz: z, e: 0.5 }), mat),
+             mk(puff(shift([[-0.15, 5.33], [0.15, 5.33], [0.09, 5.1], [-0.09, 5.1]], TX0, 0), 0.055, { cz: z + 0.03, e: 0.6 }), knotMat || mat));
+}
+const BLADE = [[-0.09, 5.12], [0.09, 5.12], [0.26, 4.12], [0, 3.88], [-0.26, 4.12]];
+const BLADE_N = [[-0.06, 5.12], [0.06, 5.12], [0.15, 4.05], [0, 3.88], [-0.15, 4.05]];
+const bowAt = (ctx, mat, s = 1) => at(bow(mat, s), TX0, 5.24, frontZ(ctx, 5.24) + 0.07);
+
+/* 項鍊共用 */
+const NY = 5.27;
+const neckD = (ctx, r) => ctx.surfD(NY) + 0.03 + r;
+function chainC(ctx, r, sag) { return curve(ringPts(NY, neckD(ctx, r), 120, sag), true); }
+function frontLow(ctx, r, sag) { return new V(bCX(NY), NY - sag, bHZ(NY) + neckD(ctx, r)); }
+function chainG(ctx, mat, r, sag) { return mk(ttube(chainC(ctx, r, sag), r, { closed: true, seg: 220, N: 8 }), mat); }
+function beadsG(ctx, mats, r, sag, n, geoFn) {
+  const g = new T.Group(), c = chainC(ctx, r, sag), geo = geoFn ? geoFn(r) : sph(r);
+  c.getSpacedPoints(n).slice(0, n).forEach((p, i) => g.add(at(mk(geo, mats[i % mats.length]), p.x, p.y, p.z)));
+  return g;
+}
+
+/* 寵物共用 */
+const PET = new V(-3.05, 0, 0.65);
+const petAt = (g, ry = 0.45) => { g.position.copy(PET); g.rotation.y = ry; return g; };
+const peyes = (x, y, z, r = 0.05, sep = 0.12) => grp(at(new T.Mesh(sph(r), BLACK), -sep, y, z), at(new T.Mesh(sph(r), BLACK), sep, y, z));
+const leg4 = (mat, hx, hz, y0, y1, r) => { const g = new T.Group(); for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(mk(ttube([new V(sx * hx, y0, sz * hz), new V(sx * hx, y1, sz * hz)], r, { cap1: true, seg: 4, N: 12 }), mat)); return g; };
+const hop = (g, amp = 0.06, sp = 3) => { g.userData.tick = t => { g.children[0].position.y = Math.max(0, Math.sin(t * sp)) * amp; }; return g; };
+const wrapPet = (...c) => { const g = new T.Group(), inner = grp(...c); g.add(inner); return g; };
+
+const ITEMS = {
+  hat: [
+    { id: 'cap', name: '鴨舌帽', c: C.blue, top: 7.0, build: () => grp(headShell(C.blue, { y0: 6.28, rise: 0.26, r1: 0.32 }), at(mk(puff(semi(0.9, 0.62), 0.035, { e: 0.5 }), C.blue), TX0, 6.32, bHZ(6.32) + 0.02, PI / 2 + 0.12), at(mk(sph(0.09), C.blue), 0, 6.96, 0)) },
+    { id: 'beanie', name: '毛線帽', c: C.red, top: 7.4, build: () => grp(headShell(PT.stripes(C.red, C.white, 4), { y0: 6.12, d: 0.06, rise: 0.42, r1: 0.42 }), torso(C.red, { y0: 6.1, y1: 6.36, d: 0.1 }), at(mk(blob(0.24, 0.24, 0.24, { e: 0.9 }), C.white), 0, 7.28, 0)) },
+    { id: 'tophat', name: '紳士禮帽', c: C.black, top: 7.6, build: () => at(grp(mk(lathe([[0, 0], [0.62, 0], [0.66, 0.03], [0.62, 0.07], [0.44, 0.08], [0.42, 0.82], [0.38, 0.86], [0, 0.86]]), C.black), new T.Mesh(new T.LatheGeometry([[0.448, 0.11], [0.452, 0.13], [0.448, 0.28], [0.444, 0.3]].map(([x, y]) => new T.Vector2(x, y)), 56), toon(C.red))), 0.08, 6.66, 0, 0, 0, -0.1) },
+    { id: 'party', name: '派對帽', c: C.yellow, top: 7.85, build: () => at(grp(mk(lathe([[0, 0], [0.42, 0], [0.44, 0.03], [0.4, 0.07], [0.02, 1.05], [0, 1.06]]), PT.vstripes(C.yellow, C.blue, 6)), at(mk(sph(0.13), C.red), 0, 1.1, 0)), -0.12, 6.66, 0, 0, 0, 0.18) },
+    { id: 'bucket', name: '漁夫帽', c: C.khaki, top: 7.0, build: () => grp(headShell(C.khaki, { y0: 6.3, rise: 0.3, r1: 0.32 }), brimLoop(6.32, 0.05, 0.42, 0.05, 0.16, toon(C.khaki))) },
+    { id: 'beret', name: '貝雷帽', c: C.red, top: 7.1, build: () => grp(at(mk(blob(1.28, 0.2, 0.9, { e: 0.9 }), '#b8322c'), -0.15, 6.84, 0, 0, 0, 0.14), at(mk(ttube([new V(0, 0, 0), new V(0.02, 0.14, 0)], 0.04, { cap1: true, seg: 4, N: 10 }), '#b8322c'), -0.2, 7.0, 0)) },
+    { id: 'crown', name: '皇冠', c: C.gold, top: 7.3, build: () => { const g = torso(C.gold, { y0: 6.5, y1: 6.86, d: 0.06 }); const cone = lathe([[0, 0], [0.12, 0], [0, 0.34]]); ringPts(6.86, 0.06, 12).forEach(p => { g.add(at(mk(cone, C.gold), p.x, p.y - 0.02, p.z)); g.add(at(mk(sph(0.05), C.gold), p.x, p.y + 0.34, p.z)); }); [[-0.5, C.red], [0, C.blue], [0.5, C.green]].forEach(([x, c]) => g.add(at(mk(sph(0.08), c), x, 6.68, bHZ(6.68) + 0.1))); return g; } },
+    { id: 'chef', name: '廚師帽', c: C.white, top: 7.7, build: () => grp(torso(C.white, { y0: 6.4, y1: 6.95, d: 0.05 }), at(mk(blob(1.3, 0.42, 0.92, { e: 0.8 }), C.white), 0, 7.25, 0), at(mk(blob(0.55, 0.38, 0.55, { e: 1 }), C.white), -0.55, 7.45, 0), at(mk(blob(0.55, 0.38, 0.55, { e: 1 }), C.white), 0.55, 7.45, 0)) },
+    { id: 'hardhat', name: '工程安全帽', c: C.yellow, top: 7.2, build: () => grp(headShell(C.yellow, { y0: 6.3, rise: 0.4, r1: 0.45 }), brimLoop(6.32, 0.05, 0.16, 0.04, 0.02, toon(C.yellow)), mk(ttube([new V(0, 7.02, -0.72), new V(0, 7.12, 0), new V(0, 7.02, 0.72)], 0.06, { cap0: true, cap1: true, seg: 20 }), C.yellow)) },
+    { id: 'headband', name: '運動頭帶', c: C.red, top: 6.7, build: () => grp(torso(C.red, { y0: 6.18, y1: 6.44, d: 0.05 }), torso(C.white, { y0: 6.29, y1: 6.33, d: 0.058, hem0: false, hem1: false })) },
+    { id: 'cowboy', name: '牛仔帽', c: C.brown, top: 7.4, build: () => at(grp(mk(lathe([[0, 0], [1.1, 0], [1.48, 0.2], [1.44, 0.25], [1.08, 0.07], [0, 0.07]], 64), '#9a6a3c'), mk(lathe([[0, 0.05], [0.56, 0.05], [0.52, 0.5], [0.35, 0.66], [0.1, 0.58], [0, 0.6]]), '#9a6a3c'), new T.Mesh(new T.LatheGeometry([[0.555, 0.08], [0.56, 0.1], [0.55, 0.2], [0.548, 0.22]].map(([x, y]) => new T.Vector2(x, y)), 56), toon(C.black))), 0, 6.66, 0, 0.04, 0, 0) },
+    { id: 'douli', name: '斗笠', c: '#e2c48a', top: 7.45, build: () => at(mk(lathe([[0, 0], [1.6, 0], [1.63, 0.04], [0.06, 0.72], [0, 0.73]], 64), PT.straw()), 0, 6.7, 0, 0, 0, 0.05) },
+    { id: 'halo', name: '天使光環', c: C.gold, top: 7.6, build: () => { const h = at(mk(smooth(new T.TorusGeometry(0.55, 0.07, 14, 64)), C.gold), 0, 7.9, 0, PI / 2 - 0.2); const g = grp(h); g.userData.tick = t => { h.position.y = 7.9 + Math.sin(t * 2) * 0.06; }; return g; } },
+    { id: 'propeller', name: '竹蜻蜓帽', c: C.green, top: 7.4, build: () => { const p = at(grp(mk(puff(circ(0.5, 30, 0.1), 0.03, { e: 0.6 }), C.yellow), at(mk(puff(circ(0.5, 30, 0.1), 0.03, { e: 0.6 }), C.yellow), 0, 0, 0, 0, 0, PI / 2)), 0, 7.28, 0, PI / 2); const g = grp(headShell(PT.quad([C.red, C.yellow, C.blue, C.green]), { y0: 6.25, rise: 0.36, r1: 0.4, unitU: true }), at(mk(ttube([new V(0, 0, 0), new V(0, 0.26, 0)], 0.04, { seg: 4, N: 10 }), C.black), 0, 7.02, 0), p); g.userData.tick = t => { p.rotation.z = t * 8; }; return g; } },
+    { id: 'earbow', name: '耳朵蝴蝶結', c: C.pink, top: 6.68, build: () => at(bow(toon(C.pink), 1.1), -1.22, 7.12, 0.24, 0, 0, 0.35) },
+  ],
+  glasses: [
+    { id: 'round', name: '圓框眼鏡', c: C.black, build: () => specs(circ(0.27), { mat: C.black, lensMat: glass(C.sky, 0.22), w: 0.27 }) },
+    { id: 'square', name: '粗黑框', c: C.black, build: () => specs(sqr(0.31, 0.23), { r: 0.055, mat: C.black, lensMat: glass(C.sky, 0.18), w: 0.31 }) },
+    { id: 'sun', name: '墨鏡', c: '#1b1c20', build: () => specs(sqr(0.32, 0.22, 0.5), { r: 0.04, mat: C.black, lensMat: glass('#14151a', 0.88), w: 0.32 }) },
+    { id: 'heart', name: '愛心眼鏡', c: C.red, build: () => specs(heart(0.3), { r: 0.035, mat: C.red, lensMat: glass(C.pink, 0.55), w: 0.3 }) },
+    { id: 'star', name: '星星眼鏡', c: C.yellow, build: () => specs(star(0.36, 0.17), { r: 0.035, mat: C.yellow, lensMat: glass(C.yellow, 0.3), w: 0.33 }) },
+    { id: 'cateye', name: '貓眼框', c: '#8a3b2a', build: () => { const g = new T.Group(); for (const k of ['L', 'R']) { const sg = k === 'L' ? -1 : 1; const p = sqr(0.3, 0.19, 0.6).map(([x, y]) => [x, y + (y > 0 ? 0.13 * Math.max(0, x * sg / 0.3) ** 2 : 0)]); g.add(frame(p, EYE[k][0], EYE[k][1], 0.045, '#8a3b2a')); g.add(lens(p, EYE[k][0], EYE[k][1], glass(C.pink, 0.15))); } g.add(bridge('#8a3b2a', EYE.L[0] + 0.3, EYE.R[0] - 0.3, 0.035)); g.add(temples('#8a3b2a', 0.3, 0.3)); return g; } },
+    { id: 'monocle', name: '單片眼鏡', c: C.gold, build: () => grp(frame(circ(0.27), EYE.R[0], EYE.R[1], 0.03, C.gold), lens(circ(0.27), EYE.R[0], EYE.R[1], glass(C.sky, 0.25)), mk(ttube([new V(EYE.R[0] + 0.22, EYE.R[1] - 0.16, GZ), new V(0.95, 5.3, 0.84), new V(1.12, 4.85, 0.82)], 0.014, { seg: 20, N: 6 }), C.gold)) },
+    { id: '3d', name: '3D 眼鏡', c: C.white, build: () => { const p = sqr(0.3, 0.2, 0.2); return grp(frame(p, EYE.L[0], EYE.L[1], 0.04, C.white), frame(p, EYE.R[0], EYE.R[1], 0.04, C.white), lens(p, EYE.L[0], EYE.L[1], glass('#e23b3b', 0.7)), lens(p, EYE.R[0], EYE.R[1], glass('#2fc3e0', 0.7)), bridge(C.white, EYE.L[0] + 0.3, EYE.R[0] - 0.3, 0.04), temples(C.white, 0.3, 0.3)); } },
+    { id: 'goggles', name: '潛水鏡', c: C.teal, build: () => { const p = sqr(1.0, 0.3, 0.4); return grp(frame(p, TX0, 5.9, 0.07, C.teal), lens(p, TX0, 5.9, glass(C.sky, 0.35)), strap(toon(C.black), 5.9, 0.035, 0.16)); } },
+    { id: 'groucho', name: '搞笑鼻子眼鏡', c: C.pink, build: () => grp(specs(circ(0.25), { r: 0.05, mat: C.black, w: 0.25 }), at(mk(blob(0.16, 0.14, 0.15, { e: 1 }), '#f3b6a0'), TX0, 5.68, 0.9), mk(ttube([new V(-0.98, 6.2, 0.8), new V(-0.72, 6.28, 0.82), new V(-0.46, 6.2, 0.8)], 0.05, { cap0: true, cap1: true, seg: 12 }), C.black), mk(ttube([new V(0.22, 6.2, 0.8), new V(0.48, 6.28, 0.82), new V(0.74, 6.2, 0.8)], 0.05, { cap0: true, cap1: true, seg: 12 }), C.black), at(mk(puff(circ(0.24, 30, 0.08), 0.04, { e: 0.6 }), C.black), TX0 - 0.2, 5.5, 0.8, 0, 0, 0.25), at(mk(puff(circ(0.24, 30, 0.08), 0.04, { e: 0.6 }), C.black), TX0 + 0.2, 5.5, 0.8, 0, 0, -0.25)) },
+    { id: 'aviator', name: '飛行員墨鏡', c: C.gold, build: () => { const p = circ(0.28, 48, 0.22).map(([x, y]) => [x, y < 0 ? y * 1.35 : y]); return grp(specs(p, { r: 0.022, mat: C.gold, lensMat: glass('#4d6b52', 0.75), w: 0.28 }), bridge(C.gold, EYE.L[0] + 0.25, EYE.R[0] - 0.25, 0.018, 6.08)); } },
+    { id: 'vr', name: 'VR 頭盔', c: C.gray, build: () => grp(at(mk(blob(1.15, 0.33, 0.24, { e: 0.35 }), '#e9ebef'), TX0, 5.9, 0.93), at(mk(blob(1.0, 0.24, 0.03, { e: 0.35 }), C.black), TX0, 5.9, 1.17), strap(toon(C.black), 5.9, 0.035, 0.2)) },
+    { id: 'patch', name: '海盜眼罩', c: C.black, build: () => { const pts = ringPts(5.95, 0.035, 120).map(p => { p.y += 0.28 * (p.x + 0.72) / 1.5 * (p.z > 0 ? 1 : 0.4); return p; }); return grp(at(mk(puff(circ(0.24), 0.03, { e: 0.6 }), C.black), EYE.L[0], EYE.L[1], 0.78), mk(ttube(pts, 0.025, { closed: true, seg: 120, N: 6 }), C.black)); } },
+    { id: 'sleep', name: '睡眠眼罩', c: C.lilac, build: () => { const g = grp(at(mk(puff(sqr(0.95, 0.27, 0.6), 0.06, { e: 0.6 }), C.lilac), TX0, 5.92, 0.8), strap(toon(C.lilac), 5.92, 0.035, 0.12)); for (const k of ['L', 'R']) g.add(line([new V(EYE[k][0] - 0.16, 5.96, 0.87), new V(EYE[k][0], 5.86, 0.875), new V(EYE[k][0] + 0.16, 5.96, 0.87)], 0.022)); return g; } },
+    { id: 'visor', name: '雷射護目鏡', c: '#e04ad8', build: () => grp(at(mk(puff(sqr(1.2, 0.17, 0.5), 0.05, { e: 0.6 }), toon('#e04ad8', { transparent: true, opacity: 0.75 })), TX0, 5.9, 0.82), temples(C.silver, 0.6, 0.6, 0.03)) },
+  ],
+  tie: [
+    { id: 'red', name: '紅領帶', c: C.red, build: ctx => tieG(ctx, C.red, BLADE) },
+    { id: 'narrow', name: '窄版領帶', c: C.navy, build: ctx => tieG(ctx, C.navy, BLADE_N) },
+    { id: 'stripe', name: '斜紋領帶', c: C.navy, build: ctx => tieG(ctx, PT.diag(C.navy, C.gold, 6), BLADE, toon(C.navy)) },
+    { id: 'dots', name: '圓點領帶', c: C.green, build: ctx => tieG(ctx, PT.dots(C.green, C.white, 6, 0.16), BLADE, toon(C.green)) },
+    { id: 'fish', name: '小魚領帶', c: C.orange, build: ctx => { const z = frontZ(ctx, 4.5) + 0.05; return grp(mk(puff(shift(circ(0.25, 40, 0.48), TX0, 4.52), 0.05, { cz: z, e: 0.6 }), C.orange), mk(puff(shift([[-0.22, 3.82], [0.22, 3.82], [0, 4.1]], TX0, 0), 0.04, { cz: z, e: 0.6 }), C.orange), at(new T.Mesh(sph(0.05), BLACK), TX0, 4.78, z + 0.06), mk(puff(shift([[-0.15, 5.33], [0.15, 5.33], [0.09, 5.1], [-0.09, 5.1]], TX0, 0), 0.055, { cz: z + 0.02, e: 0.6 }), C.orange)); } },
+    { id: 'bowy', name: '黃色蝴蝶結', c: C.yellow, build: ctx => bowAt(ctx, toon(C.yellow)) },
+    { id: 'bowb', name: '黑色領結', c: C.black, build: ctx => bowAt(ctx, toon(C.black), 0.8) },
+    { id: 'bowp', name: '格紋蝴蝶結', c: C.red, build: ctx => bowAt(ctx, PT.plaid(C.red, C.navy, C.yellow)) },
+    { id: 'bowbig', name: '大粉紅蝴蝶結', c: C.pink, build: ctx => bowAt(ctx, PT.dots(C.pink, C.white, 4, 0.14), 1.6) },
+    { id: 'bandana', name: '牛仔領巾', c: C.red, build: ctx => { const z = frontZ(ctx, 5.0) + 0.04; return grp(mk(puff(shift([[-0.78, 5.4], [0.78, 5.4], [0, 4.45]], TX0, 0), 0.035, { cz: z, e: 0.5 }), PT.dots(C.red, C.white, 5, 0.1)), mk(ttube(ringPts(5.36, ctx.surfD(5.36) + 0.07, 120), 0.05, { closed: true, seg: 120, N: 8 }), C.red)); } },
+    { id: 'sailor', name: '水手領結', c: C.red, build: ctx => { const z = frontZ(ctx, 5.0) + 0.05, tl = [[-0.04, 5.2], [0.08, 5.22], [0.32, 4.62], [0.14, 4.56]]; return grp(mk(puff(shift(tl, TX0, 0), 0.03, { cz: z, e: 0.5 }), C.red), mk(puff(shift(tl, TX0, 0, -1), 0.03, { cz: z, e: 0.5 }), C.red), at(mk(blob(0.16, 0.12, 0.08, { e: 0.6 }), C.red), TX0, 5.25, z + 0.04)); } },
+    { id: 'bolo', name: '波洛領帶', c: C.teal, build: ctx => { const z = frontZ(ctx, 4.8) + 0.04; return grp(mk(ttube(ringPts(5.3, ctx.surfD(5.3) + 0.03, 120), 0.02, { closed: true, seg: 120, N: 6 }), C.black), mk(ttube([new V(TX0 - 0.05, 5.0, z), new V(TX0 - 0.08, 4.35, z)], 0.02, { seg: 6, N: 6 }), C.black), mk(ttube([new V(TX0 + 0.05, 5.0, z), new V(TX0 + 0.08, 4.35, z)], 0.02, { seg: 6, N: 6 }), C.black), at(mk(blob(0.04, 0.08, 0.04, { e: 0.8 }), C.silver), TX0 - 0.08, 4.3, z), at(mk(blob(0.04, 0.08, 0.04, { e: 0.8 }), C.silver), TX0 + 0.08, 4.3, z), frame(circ(0.15), TX0, 5.05, 0.025, C.silver, z + 0.04), at(mk(puff(circ(0.14), 0.04, { e: 0.8 }), C.teal), TX0, 5.05, z + 0.04)); } },
+    { id: 'scarf', name: '紅色圍巾', c: C.red, build: ctx => { const d = ctx.surfD(5.3) + 0.12; return grp(torso(C.red, { y0: 5.12, y1: 5.45, d, mod: a => 1 + 0.015 * Math.sin(a * 9) }), mk(puff([[-0.62, 5.25], [-0.28, 5.25], [-0.22, 3.95], [-0.6, 4.0]], 0.05, { cz: bHZ(4.6) + ctx.surfD(4.6) + 0.07, e: 0.5 }), C.red)); } },
+    { id: 'scarfs', name: '條紋圍巾', c: C.mustard, build: ctx => { const d = ctx.surfD(5.3) + 0.12, m = PT.stripes(C.mustard, C.navy, 4); return grp(torso(m, { y0: 5.12, y1: 5.45, d, mod: a => 1 + 0.015 * Math.sin(a * 9) }), mk(puff([[-0.62, 5.25], [-0.28, 5.25], [-0.22, 3.95], [-0.6, 4.0]], 0.05, { cz: bHZ(4.6) + ctx.surfD(4.6) + 0.07, e: 0.5 }), m)); } },
+    { id: 'bib', name: '口水巾', c: C.sky, build: ctx => { const z = frontZ(ctx, 4.9) + 0.035, p = [[-0.58, 5.4], [0.58, 5.4], ...circ(0.58, 40).filter(([, y]) => y < 0).sort((a, b) => b[0] - a[0]).map(([x, y]) => [x, 5.4 + y * 1.05])]; return grp(mk(puff(shift(p, TX0, 0), 0.03, { cz: z, e: 0.5 }), PT.dots(C.sky, C.white, 5, 0.18)), at(mk(puff(star(0.16, 0.07), 0.02, { e: 0.6 }), C.yellow), TX0, 5.0, z + 0.03)); } },
+  ],
+  neck: [
+    { id: 'collar', name: '紅鈴鐺項圈', c: C.red, build: ctx => { const p = frontLow(ctx, 0.075, 0); return grp(chainG(ctx, C.red, 0.075, 0), at(mk(sph(0.16), C.gold), p.x - 0.12, p.y - 0.17, p.z + 0.08), at(new T.Mesh(sph(0.03), BLACK), p.x - 0.12, p.y - 0.23, p.z + 0.23)); } },
+    { id: 'collarb', name: '藍鈴鐺項圈', c: C.blue, build: ctx => { const p = frontLow(ctx, 0.075, 0); return grp(chainG(ctx, C.blue, 0.075, 0), at(mk(sph(0.16), C.gold), p.x - 0.12, p.y - 0.17, p.z + 0.08), at(new T.Mesh(sph(0.03), BLACK), p.x - 0.12, p.y - 0.23, p.z + 0.23)); } },
+    { id: 'pearls', name: '珍珠項鍊', c: C.cream, build: ctx => beadsG(ctx, [toon(C.cream)], 0.075, 0.55, 46) },
+    { id: 'goldc', name: '金色圓牌', c: C.gold, build: ctx => { const p = frontLow(ctx, 0.03, 0.65); return grp(chainG(ctx, C.gold, 0.03, 0.65), at(mk(blob(0.17, 0.17, 0.04, { e: 1 }), C.gold), p.x, p.y - 0.17, p.z + 0.03)); } },
+    { id: 'heart', name: '愛心銀鍊', c: C.silver, build: ctx => { const p = frontLow(ctx, 0.025, 0.6); return grp(chainG(ctx, C.silver, 0.025, 0.6), mk(puff(shift([[0, -0.2], [0.18, 0.02], [0.14, 0.12], [0.05, 0.13], [0, 0.07], [-0.05, 0.13], [-0.14, 0.12], [-0.18, 0.02]], p.x, p.y - 0.13), 0.04, { cz: p.z + 0.03, e: 0.7 }), C.red)); } },
+    { id: 'bone', name: '骨頭吊牌', c: C.brown, build: ctx => { const p = frontLow(ctx, 0.07, 0); const b = grp(mk(ttube([new V(-0.15, 0, 0), new V(0.15, 0, 0)], 0.05, { seg: 4, N: 10 }), C.gold), ...[[-0.17, 0.05], [-0.17, -0.05], [0.17, 0.05], [0.17, -0.05]].map(([x, y]) => at(mk(sph(0.06), C.gold), x, y, 0))); return grp(chainG(ctx, C.brown, 0.07, 0), at(b, p.x, p.y - 0.2, p.z + 0.06, 0, 0, 0.1)); } },
+    { id: 'lei', name: '夏威夷花環', c: C.pink, build: ctx => beadsG(ctx, [toon(C.pink), toon(C.yellow), toon(C.white), toon(C.orange)], 0.12, 0.65, 34, r => blob(r, r, r * 0.7, { e: 1.4 })) },
+    { id: 'rainbow', name: '彩色串珠', c: C.teal, build: ctx => beadsG(ctx, ['#e8524a', '#f39a3c', '#f2c230', '#5fb36a', '#3a8fe0', '#8c62d8'].map(c => toon(c)), 0.08, 0.45, 48) },
+    { id: 'diamond', name: '鑽石項鍊', c: C.sky, build: ctx => { const p = frontLow(ctx, 0.02, 0.6); return grp(chainG(ctx, C.silver, 0.02, 0.6), at(mk(new T.OctahedronGeometry(0.17), C.sky), p.x, p.y - 0.18, p.z + 0.06, 0, 0.6, 0)); } },
+    { id: 'wood', name: '木珠項鍊', c: C.wood, build: ctx => beadsG(ctx, [toon(C.wood), toon('#7d5634')], 0.09, 0.5, 40) },
+    { id: 'shell', name: '貝殼項鍊', c: C.cream, build: ctx => { const p = frontLow(ctx, 0.02, 0.55); return grp(chainG(ctx, C.tan, 0.02, 0.55), mk(puff(shift([[0, -0.03], [0.22, 0.17], [0.16, 0.3], [0, 0.34], [-0.16, 0.3], [-0.22, 0.17]], p.x, p.y - 0.38), 0.05, { cz: p.z + 0.04, e: 0.8 }), PT.vstripes('#f7d9cf', '#e8a99a', 8))); } },
+    { id: 'candy', name: '糖果項鍊', c: C.mint, build: ctx => beadsG(ctx, [toon(C.mint), toon(C.pink), toon('#f7e48a'), toon(C.lilac)], 0.08, 0.5, 30, r => blob(r * 1.2, r * 0.8, r * 0.8, { e: 0.6 })) },
+    { id: 'star', name: '星星墜子', c: C.yellow, build: ctx => { const p = frontLow(ctx, 0.025, 0.6); return grp(chainG(ctx, C.gold, 0.025, 0.6), mk(puff(shift(star(0.22, 0.1), p.x, p.y - 0.2), 0.04, { cz: p.z + 0.03, e: 0.7 }), C.yellow)); } },
+    { id: 'fishbone', name: '魚骨墜子', c: C.white, build: ctx => { const p = frontLow(ctx, 0.02, 0.55), z = p.z + 0.04, y = p.y - 0.2, g = grp(chainG(ctx, C.black, 0.02, 0.55), mk(ttube([new V(p.x - 0.3, y, z), new V(p.x + 0.2, y, z)], 0.025, { cap1: true, seg: 6, N: 8 }), C.white), mk(puff(shift([[0, 0], [0.16, 0.12], [0.16, -0.12]], p.x + 0.18, y), 0.03, { cz: z, e: 0.6 }), C.white), mk(puff(shift([[0, 0], [-0.1, 0.1], [-0.1, -0.1]], p.x - 0.28, y), 0.025, { cz: z, e: 0.6 }), C.white)); for (const x of [-0.18, -0.06, 0.06]) g.add(mk(ttube([new V(p.x + x, y - 0.11, z), new V(p.x + x + 0.03, y, z), new V(p.x + x, y + 0.11, z)], 0.018, { seg: 8, N: 6 }), C.white)); return g; } },
+    { id: 'medal', name: '冠軍金牌', c: C.gold, build: ctx => { const p = frontLow(ctx, 0.05, 0.7); return grp(chainG(ctx, C.blue, 0.05, 0.7), at(mk(blob(0.24, 0.24, 0.05, { e: 1 }), C.gold), p.x, p.y - 0.28, p.z + 0.05), at(mk(puff(star(0.12, 0.05), 0.02, { e: 0.6 }), '#c8901f'), p.x, p.y - 0.28, p.z + 0.1)); } },
+  ],
+  top: [
+    { id: 'tee', name: '黃色 T 恤', c: C.yellow, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.36, d: 0.05 }, build: () => grp(torso(C.yellow), sleeves(C.yellow, 0.36)) },
+    { id: 'stripe', name: '條紋上衣', c: C.navy, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.92, d: 0.05 }, build: () => { const m = PT.stripes(C.navy, C.white, 5); return grp(torso(m), sleeves(m, 0.92)); } },
+    { id: 'hoodie', name: '連帽衫', c: C.sage, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.92, d: 0.05 }, build: () => grp(torso(C.sage), sleeves(C.sage, 0.92), at(mk(blob(1.15, 0.48, 0.36, { e: 0.55 }), '#7d9775'), 0, 5.5, -(bHZ(5.5) + 0.27)), mk(puff(shift(sqr(0.78, 0.28, 0.4), TX0, 4.1), 0.04, { cz: bHZ(4.1) + 0.08, e: 0.5 }), '#7d9775'), line([new V(TX0 - 0.25, 5.4, 0.85), new V(TX0 - 0.28, 4.75, 0.86)], 0.025), line([new V(TX0 + 0.25, 5.4, 0.85), new V(TX0 + 0.28, 4.75, 0.86)], 0.025)) },
+    { id: 'suit', name: '西裝外套', c: C.navy, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.92, d: 0.05 }, build: () => { const z = bHZ(5) + 0.06, V3 = [[-0.46, 5.42], [0.46, 5.42], [0, 4.38]]; const g = grp(torso(C.navy), sleeves(C.navy, 0.92), mk(puff(shift(V3, TX0, 0), 0.012, { cz: z, e: 0.5 }), C.white, false), line(to3(shift([[-0.46, 5.42], [0, 4.38], [0.46, 5.42]], TX0, 0), z + 0.012), 0.017), mk(puff(shift([[-0.12, 0.08], [0.12, 0.08], [0, -0.08]], 0.75, 4.88), 0.02, { cz: bHZ(4.9) + 0.07, e: 0.5 }), C.red)); for (const y of [4.25, 3.95]) g.add(at(mk(blob(0.07, 0.07, 0.03, { e: 1 }), C.gold), TX0, y, bHZ(y) + 0.08)); return g; } },
+    { id: 'shirt', name: '白襯衫', c: '#eef3fb', cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.92, d: 0.05 }, build: () => { const z = bHZ(5.3) + 0.07, g = grp(torso('#eef3fb'), sleeves('#eef3fb', 0.92), mk(puff(shift([[-0.5, 5.4], [-0.06, 5.38], [-0.14, 5.08]], TX0, 0), 0.025, { cz: z, e: 0.5 }), '#eef3fb'), mk(puff(shift([[0.06, 5.38], [0.5, 5.4], [0.14, 5.08]], TX0, 0), 0.025, { cz: z, e: 0.5 }), '#eef3fb')); for (const y of [4.95, 4.6, 4.25, 3.9]) g.add(at(mk(sph(0.045), C.white), TX0, y, bHZ(y) + 0.075)); return g; } },
+    { id: 'turtle', name: '高領毛衣', c: C.mustard, cover: { y0: 3.62, y1: 5.45, d: 0.12 }, sleeve: { t1: 0.92, d: 0.06 }, build: () => { const m = PT.vstripes(C.mustard, '#c99a24', 10); return grp(torso(m, { d: 0.06 }), torso(m, { y0: 5.15, y1: 5.45, d: 0.13, mod: a => 1 + 0.01 * Math.sin(a * 40) }), sleeves(m, 0.92, 0.06)); } },
+    { id: 'tank', name: '運動背心', c: C.orange, cover: { y0: 3.62, y1: 5.3, d: 0.05 }, build: () => grp(torso(C.orange, { y1: 5.3 }), torso(C.white, { y0: 5.2, y1: 5.3, d: 0.06, hem0: false })) },
+    { id: 'hawaii', name: '夏威夷衫', c: C.sky, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.4, d: 0.07 }, build: () => { const m = PT.floral(C.sky, C.red, C.white), z = bHZ(5.3) + 0.07; return grp(torso(m), sleeves(m, 0.4, 0.07), mk(puff(shift([[-0.55, 5.4], [-0.06, 5.38], [-0.14, 5.0]], TX0, 0), 0.025, { cz: z, e: 0.5 }), m), mk(puff(shift([[0.06, 5.38], [0.55, 5.4], [0.14, 5.0]], TX0, 0), 0.025, { cz: z, e: 0.5 }), m)); } },
+    { id: 'jersey', name: '07 號球衣', c: C.red, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.38, d: 0.05 }, build: () => grp(torso(PT.jersey(C.red, C.white, '07'), { unitU: true }), sleeves(C.white, 0.38)) },
+    { id: 'puffer', name: '羽絨外套', c: '#e8503f', cover: { y0: 3.45, y1: 5.42, d: 0.16 }, sleeve: { t1: 0.92, d: 0.12 }, build: () => grp(torso('#e8503f', { y0: 3.45, dFn: y => 0.1 + 0.055 * Math.abs(Math.sin((y - 3.45) * PI / 0.42)) }), sleeves('#e8503f', 0.92, 0.1, { rFn: u => 0.08 + 0.04 * Math.abs(Math.sin(u * PI * 5)) })) },
+    { id: 'dress', name: '小洋裝', c: C.pink, cover: { y0: 2.55, y1: 5.42, d: 0.1 }, sleeve: { t1: 0.26, d: 0.12 }, build: () => grp(torso(PT.dots(C.pink, C.white, 4, 0.14), { y0: 2.55, dFn: y => y > 3.7 ? 0.1 : 0.1 + 0.6 * Math.pow((3.7 - y) / 1.15, 1.2) }), sleeves(C.pink, 0.26, 0.1, { rFn: u => 0.07 + 0.07 * Math.sin(u * PI) })) },
+    { id: 'raincoat', name: '黃色雨衣', c: C.yellow, cover: { y0: 2.7, y1: 5.42, d: 0.12 }, sleeve: { t1: 0.92, d: 0.08 }, build: () => { const g = grp(torso(C.yellow, { y0: 2.7, dFn: y => y > 3.6 ? 0.12 : 0.12 + 0.35 * (3.6 - y) / 0.9 }), sleeves(C.yellow, 0.92, 0.08), at(mk(blob(1.2, 0.5, 0.4, { e: 0.55 }), C.yellow), 0, 5.55, -(bHZ(5.5) + 0.3))); for (const y of [4.9, 4.4, 3.9]) g.add(at(mk(blob(0.12, 0.05, 0.05, { e: 0.8 }), C.navy), TX0, y, bHZ(y) + 0.16)); return g; } },
+    { id: 'apron', name: '廚師圍裙', c: C.white, build: ctx => { const z = bHZ(4) + ctx.surfD(4) + 0.05, g = grp(mk(puff(shift([[-0.55, 5.32], [0.55, 5.32], [0.78, 4.3], [0.82, 2.9], [-0.82, 2.9], [-0.78, 4.3]], TX0, 0), 0.035, { cz: z, e: 0.5 }), PT.stripes(C.white, '#dbe4f5', 8)), mk(ttube(ringPts(5.35, ctx.surfD(5.35) + 0.04, 120), 0.03, { closed: true, seg: 120, N: 6 }), C.white), mk(ttube(ringPts(4.05, ctx.surfD(4.05) + 0.04, 120), 0.03, { closed: true, seg: 120, N: 6 }), C.white), mk(puff(shift(sqr(0.32, 0.22, 0.3), TX0, 3.6), 0.02, { cz: z + 0.035, e: 0.5 }), C.red)); return g; } },
+    { id: 'cape', name: '英雄披風', c: C.red, build: ctx => { const p = at(mk(puff([[-1.0, 1.55], [1.0, 1.55], [1.85, -1.45], [-1.85, -1.45]], 0.04, { e: 0.5 }), C.red), 0, 3.95, -(bHZ(4) + ctx.surfD(4) + 0.24), 0.12); return grp(p, mk(ttube(ringPts(5.38, ctx.surfD(5.38) + 0.07, 120), 0.07, { closed: true, seg: 120, N: 8 }), C.red), at(mk(blob(0.13, 0.13, 0.05, { e: 1 }), C.gold), TX0, 5.3, bHZ(5.3) + ctx.surfD(5.3) + 0.15)); } },
+    { id: 'flannel', name: '格紋襯衫', c: C.red, cover: { y0: 3.62, y1: 5.42, d: 0.05 }, sleeve: { t1: 0.92, d: 0.05 }, build: () => { const m = PT.plaid(C.red, C.black, '#f1d9a0'), z = bHZ(5.3) + 0.07; return grp(torso(m), sleeves(m, 0.92), mk(puff(shift([[-0.5, 5.4], [-0.06, 5.38], [-0.14, 5.08]], TX0, 0), 0.025, { cz: z, e: 0.5 }), m), mk(puff(shift([[0.06, 5.38], [0.5, 5.4], [0.14, 5.08]], TX0, 0), 0.025, { cz: z, e: 0.5 }), m)); } },
+  ],
+  pants: [
+    { id: 'shorts', name: '短褲', c: C.blue, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'knee', build: () => pantsBase(C.blue, { legY: 1.9 }) },
+    { id: 'jeans', name: '牛仔褲', c: C.denim, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase(PT.denim(C.denim), { legY: 0.62 }) },
+    { id: 'skirt', name: '格紋裙', c: C.red, cover: { y0: 2.45, y1: 3.8, d: 0.08 }, build: () => torso(PT.plaid(C.red, C.navy, C.yellow), { y0: 2.45, y1: 3.8, dFn: y => 0.08 + 0.5 * Math.pow((3.8 - y) / 1.35, 1.1) }) },
+    { id: 'track', name: '運動褲', c: C.gray, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => grp(pantsBase(C.gray, { legY: 0.62, ld: 0.07 }), torso(C.white, { y0: 3.6, y1: 3.82, d: 0.1 })) },
+    { id: 'overalls', name: '吊帶褲', c: C.denim, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: ctx => { const m = PT.denim(C.denim), z = bHZ(4.2) + ctx.surfD(4.2) + 0.04, g = grp(pantsBase(m, { legY: 0.62 }), mk(puff(shift([[-0.62, 4.75], [0.62, 4.75], [0.64, 3.7], [-0.64, 3.7]], TX0, 0), 0.03, { cz: z, e: 0.5 }), m), mk(puff(shift(sqr(0.25, 0.18, 0.3), TX0, 4.3), 0.015, { cz: z + 0.03, e: 0.5 }), m)); for (const s of [-1, 1]) { const xb = TX0 + s * 0.5, zb = bHZ(4) + ctx.surfD(4) + 0.03; g.add(mk(ttube([new V(xb, 4.72, z), new V(s * 0.85, 5.3, bHZ(5.3) + ctx.surfD(5.3) + 0.03), new V(s * 1.45, 5.3, 0.3), new V(s * 0.9, 4.6, -zb), new V(s * 0.75, 3.8, -zb)], 0.045, { seg: 40, N: 8, e: 0.6 }), m)); g.add(at(mk(sph(0.06), C.gold), xb, 4.68, z + 0.04)); } return g; } },
+    { id: 'khaki', name: '卡其褲', c: C.khaki, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase(C.khaki, { legY: 0.62 }) },
+    { id: 'bloomer', name: '南瓜褲', c: C.orange, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'knee', build: () => pantsBase(PT.stripes(C.orange, '#f7c08a', 4), { legY: 2.0, flare: u => 0.18 * Math.sin(PI * Math.min(1, u * 1.1)) }) },
+    { id: 'tutu', name: '蓬蓬裙', c: C.pink, cover: { y0: 3.1, y1: 3.8, d: 0.08 }, build: () => grp(torso(C.pink, { y0: 3.5, y1: 3.8, d: 0.08 }), torso(toon(C.pink), { y0: 3.15, y1: 3.6, dFn: y => 0.08 + 0.8 * Math.pow((3.6 - y) / 0.45, 0.7), mod: a => 1 + 0.04 * Math.sin(a * 14) }), torso(toon('#f7c2d2'), { y0: 3.05, y1: 3.35, dFn: y => 0.3 + 0.75 * Math.pow((3.35 - y) / 0.3, 0.7), mod: a => 1 + 0.04 * Math.sin(a * 14 + 1) })) },
+    { id: 'pj', name: '條紋睡褲', c: C.sky, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase(PT.stripes(C.sky, C.white, 6), { legY: 0.62, ld: 0.07 }) },
+    { id: 'camo', name: '迷彩褲', c: '#7b8a5a', cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase(PT.camo(), { legY: 0.62, ld: 0.07 }) },
+    { id: 'capri', name: '七分褲', c: C.cream, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'calf', build: () => pantsBase(C.cream, { legY: 1.1 }) },
+    { id: 'bell', name: '喇叭褲', c: '#c0602c', cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase('#c0602c', { legY: 0.62, flare: u => 0.32 * Math.pow(Math.max(0, (u - 0.5) / 0.5), 2) }) },
+    { id: 'pleat', name: '百褶裙', c: C.navy, cover: { y0: 2.5, y1: 3.8, d: 0.08 }, build: () => torso(C.navy, { y0: 2.5, y1: 3.8, dFn: y => 0.08 + 0.42 * Math.pow((3.8 - y) / 1.3, 1.1), mod: a => 1 + 0.025 * Math.abs(Math.sin(a * 14)) }) },
+    { id: 'swim', name: '海灘短褲', c: C.teal, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'knee', build: () => pantsBase(PT.floral(C.teal, C.yellow, C.white), { legY: 2.2, ld: 0.08 }) },
+    { id: 'slacks', name: '西裝褲', c: '#3a3f55', cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase('#3a3f55', { legY: 0.62 }) },
+  ],
+  gloves: [
+    { id: 'toon', name: '卡通白手套', c: '#f4f4f4', build: ctx => glovesG('#f4f4f4', ctx, { tc: 0.78, flare: 0.07, extra: (h) => { for (const dx of [-0.08, 0.04, 0.16]) h.add(line([new V(dx, 0.02, 0.27), new V(dx - 0.02, -0.12, 0.25)].map(p => p), 0.014)); } }) },
+    { id: 'mitten', name: '紅色毛手套', c: C.red, build: ctx => glovesG(C.red, ctx, { tc: 0.82, cuffMat: toon(C.white), cd: 0.07, extra: h => h.add(at(mk(blob(0.12, 0.09, 0.1, { e: 1 }), C.red), 0.05, 0.22, 0.1)) }) },
+    { id: 'boxing', name: '拳擊手套', c: C.red, build: ctx => glovesG('#d6332b', ctx, { sc: 1.55, tc: 0.8, cd: 0.08, cuffMat: toon(C.white) }) },
+    { id: 'rubber', name: '洗碗手套', c: C.yellow, build: ctx => glovesG(C.yellow, ctx, { tc: 0.5, cd: 0.035, flare: 0.05 }) },
+    { id: 'oven', name: '隔熱手套', c: C.red, build: ctx => glovesG(PT.check(C.red, C.white, 4), ctx, { sc: 1.25, tc: 0.72, cd: 0.08 }) },
+    { id: 'leather', name: '黑皮手套', c: C.black, build: ctx => glovesG(C.black, ctx, { d: 0.03, tc: 0.85, cd: 0.03 }) },
+    { id: 'stripe', name: '條紋手套', c: C.pink, build: ctx => { const m = PT.stripes(C.pink, C.white, 5); return glovesG(m, ctx, { tc: 0.7, cd: 0.04 }); } },
+    { id: 'fingerless', name: '露指手套', c: C.gray, build: ctx => { const g = new T.Group(); for (const k of ['L', 'R']) { if (ctx.thumb && k === 'L') continue; const H = HANDS[k], hm = at(mk(blob(0.25, 0.27, 0.25, { e: 0.75 }), C.gray), 0, 0, 0); const holder = at(new T.Group(), ...H.p, ...H.r); hm.position.x = k === 'L' ? 0.12 : -0.12; holder.add(hm); g.add(holder); const c = subCurve(armC[k], 0.85, 1), so = ctx.sleeve && ctx.sleeve.t1 > 0.85 ? ctx.sleeve.d + 0.02 : 0; g.add(mk(ttube(c, AR + so + 0.05, { seg: 12 }), C.gray), rimAt(c, 0, AR + so + 0.05)); } return g; } },
+    { id: 'baseball', name: '棒球手套', c: '#b26b2f', build: ctx => glovesG('#b26b2f', ctx, { only: 'L', sc: 1.45, tc: 0.85, cd: 0.06, extra: h => { h.add(at(mk(blob(0.2, 0.32, 0.12, { e: 0.8 }), '#b26b2f'), -0.3, 0.2, 0.05, 0, 0, 0.5)); h.add(line([new V(-0.3, 0.1, 0.3), new V(0.1, 0.2, 0.32), new V(0.3, 0.0, 0.3)], 0.02)); } }) },
+    { id: 'garden', name: '園藝手套', c: C.green, build: ctx => glovesG(PT.dots(C.green, '#cfe8c8', 4, 0.15), ctx, { tc: 0.75, cd: 0.05, cuffMat: toon('#3f7a3c') }) },
+    { id: 'polka', name: '圓點手套', c: C.navy, build: ctx => glovesG(PT.dots(C.navy, C.white, 4, 0.14), ctx, { tc: 0.8 }) },
+    { id: 'paw', name: '貓掌手套', c: C.cream, build: ctx => glovesG(C.cream, ctx, { sc: 1.12, tc: 0.82, cd: 0.06, extra: h => { h.add(at(mk(blob(0.12, 0.09, 0.04, { e: 1 }), C.pink), 0, -0.05, 0.28)); for (const [x, y] of [[-0.17, 0.08], [-0.06, 0.13], [0.06, 0.13], [0.17, 0.08]]) h.add(at(mk(sph(0.045), C.pink), x, y, 0.27)); } }) },
+    { id: 'opera', name: '蕾絲長手套', c: C.black, build: ctx => glovesG(C.black, ctx, { d: 0.02, tc: 0.32, cd: 0.025 }) },
+    { id: 'snow', name: '雪地手套', c: C.blue, build: ctx => glovesG(C.blue, ctx, { sc: 1.3, tc: 0.78, cd: 0.12, cuffMat: toon(C.white) }) },
+    { id: 'claw', name: '龍蝦鉗', c: '#e0402e', build: ctx => glovesG('#e0402e', ctx, { sc: 1.1, tc: 0.82, extra: h => { h.add(at(mk(blob(0.3, 0.12, 0.16, { e: 0.8, taper: 0.4 }), '#e0402e'), -0.18, 0.2, 0, 0, 0, 0.9)); h.add(at(mk(blob(0.28, 0.1, 0.15, { e: 0.8, taper: 0.4 }), '#e0402e'), -0.24, -0.12, 0, 0, 0, -0.5)); } }) },
+  ],
+  shoes: [
+    { id: 'sneakers', name: '運動鞋', c: C.white, lift: 0.1, build: ctx => grp(shoesG(C.white, ctx, { extra: (g, k, c) => { const p = c.getPointAt(0.7); g.add(line([p.clone().add(new V(-0.12, 0.25, 0.1)), p.clone().add(new V(0.12, 0.27, 0.0))], 0.016)); } }), sole('L', C.blue), sole('R', C.blue)) },
+    { id: 'boots', name: '雨靴', c: C.yellow, lift: 0.1, build: ctx => grp(shoesG(C.yellow, ctx, { y0: 1.4, d: 0.07 }), sole('L', C.black, 0.06), sole('R', C.black, 0.06)) },
+    { id: 'loafer', name: '皮鞋', c: C.brown, lift: 0.08, build: ctx => grp(shoesG(C.brown, ctx, { d: 0.04 }), sole('L', '#3e2414', 0.05), sole('R', '#3e2414', 0.05)) },
+    { id: 'canvas', name: '帆布鞋', c: C.red, lift: 0.1, build: ctx => grp(shoesG(C.red, ctx, { extra: (g, k, c, R) => { const p = c.getPointAt(1), t = c.getTangentAt(1); g.add(at(mk(blob(0.3, 0.2, 0.22, { e: 0.9 }), C.white), p.x + t.x * 0.12, p.y - 0.02, p.z + t.z * 0.12)); } }), sole('L', C.white), sole('R', C.white)) },
+    { id: 'flipflop', name: '夾腳拖', c: C.sky, lift: 0.06, build: () => { const g = grp(sole('L', C.sky, 0.06, 0.34, 0.05), sole('R', C.sky, 0.06, 0.34, 0.05)); for (const k of ['L', 'R']) { const F = footFrame(k), p = F.mid.clone().addScaledVector(LEG[k].fd, 0.3); const s = new V(LEG[k].fd.z, 0, -LEG[k].fd.x); g.add(mk(ttube([p.clone().addScaledVector(s, 0.27).setY(F.y + 0.08), p.clone().setY(F.y + 0.33).addScaledVector(LEG[k].fd, -0.05), p.clone().addScaledVector(s, -0.27).setY(F.y + 0.08)], 0.035, { seg: 16, N: 8 }), C.yellow)); } return g; } },
+    { id: 'socks', name: '條紋襪', c: C.red, build: ctx => shoesG(PT.stripes(C.red, C.white, 5), ctx, { y0: 1.15, d: 0.025 }) },
+    { id: 'riding', name: '馬靴', c: '#5a3520', lift: 0.08, build: ctx => grp(shoesG('#5a3520', ctx, { y0: 1.95, d: 0.07 }), sole('L', '#2a170c', 0.05), sole('R', '#2a170c', 0.05)) },
+    { id: 'skate', name: '溜冰鞋', c: C.white, lift: 0.32, build: ctx => { const g = grp(shoesG(C.white, ctx, { y0: 1.05, d: 0.06 }), sole('L', C.pink, 0.08), sole('R', C.pink, 0.08)); for (const k of ['L', 'R']) { const F = footFrame(k); for (const s of [-0.62, -0.2, 0.2, 0.62]) { const p = F.mid.clone().addScaledVector(LEG[k].fd, s * F.len); for (const side of [-1, 1]) g.add(at(mk(smooth(new T.CylinderGeometry(0.12, 0.12, 0.08, 20)), C.mint), p.x + LEG[k].fd.z * side * 0.22, F.y - 0.16, p.z - LEG[k].fd.x * side * 0.22, 0, F.ry, PI / 2)); } } return g; } },
+    { id: 'bunny', name: '兔兔拖鞋', c: C.pink, lift: 0.08, build: ctx => grp(shoesG(C.pink, ctx, { d: 0.09, toe: 1.25, extra: (g, k, c) => { const p = c.getPointAt(0.75); for (const s of [-1, 1]) g.add(at(mk(puff([[-0.07, 0], [0.07, 0], [0.06, 0.4], [0, 0.45], [-0.06, 0.4]], 0.04), C.pink), p.x + LEG[k].fd.z * s * 0.12, p.y + 0.28, p.z - LEG[k].fd.x * s * 0.12, -0.3, Math.atan2(LEG[k].fd.x, LEG[k].fd.z), s * 0.2)); const q = c.getPointAt(1); g.add(grp(at(new T.Mesh(sph(0.035), BLACK), q.x + LEG[k].fd.x * 0.15 + 0.08, q.y + 0.18, q.z + LEG[k].fd.z * 0.15 + 0.06), at(new T.Mesh(sph(0.035), BLACK), q.x + LEG[k].fd.x * 0.15 - 0.08, q.y + 0.18, q.z + LEG[k].fd.z * 0.15 - 0.06))); } }), sole('L', C.white, 0.06), sole('R', C.white, 0.06)) },
+    { id: 'geta', name: '木屐', c: C.wood, lift: 0.3, build: () => { const g = new T.Group(); for (const k of ['L', 'R']) { const F = footFrame(k); g.add(at(mk(blob(0.36, 0.05, F.len + 0.05, { e: 0.3 }), C.wood), F.mid.x, F.y - 0.03, F.mid.z, 0, F.ry, 0)); for (const s of [-0.5, 0.5]) { const p = F.mid.clone().addScaledVector(LEG[k].fd, s * F.len); g.add(at(mk(blob(0.33, 0.11, 0.05, { e: 0.3 }), C.wood), p.x, F.y - 0.2, p.z, 0, F.ry, 0)); } const p = F.mid.clone().addScaledVector(LEG[k].fd, 0.25), s = new V(LEG[k].fd.z, 0, -LEG[k].fd.x); g.add(mk(ttube([p.clone().addScaledVector(s, 0.3).setY(F.y + 0.02), p.clone().setY(F.y + 0.36), p.clone().addScaledVector(s, -0.3).setY(F.y + 0.02)], 0.04, { seg: 16, N: 8 }), C.red)); } return g; } },
+    { id: 'moon', name: '太空靴', c: C.silver, lift: 0.14, build: ctx => grp(shoesG(C.silver, ctx, { y0: 1.0, d: 0.13 }), sole('L', C.gray, 0.1, 0.42), sole('R', C.gray, 0.1, 0.42)) },
+    { id: 'ballet', name: '芭蕾舞鞋', c: C.pink, build: ctx => shoesG('#f6bfcf', ctx, { d: 0.025, extra: (g, k) => { const L = LEG[k], pts = []; for (let i = 0; i <= 40; i++) { const t = lerp(L.tAt(0.5 + L.fy), L.tAt(1.35 + L.fy), i / 40), p = L.c.getPointAt(t), a = i / 40 * PI * 6, r = L.r(t) + 0.03; pts.push(new V(p.x + Math.cos(a) * r, p.y, p.z + Math.sin(a) * r)); } g.add(mk(ttube(pts, 0.018, { seg: 120, N: 6 }), '#f29bb4')); } }) },
+    { id: 'clown', name: '小丑鞋', c: C.red, lift: 0.1, build: ctx => grp(shoesG(C.red, ctx, { d: 0.06, toe: 1.8 }), sole('L', C.yellow, 0.07, 0.42, 0.2), sole('R', C.yellow, 0.07, 0.42, 0.2)) },
+    { id: 'cleats', name: '足球釘鞋', c: C.black, lift: 0.14, build: ctx => { const g = grp(shoesG(C.black, ctx, { d: 0.04 }), sole('L', C.white, 0.05), sole('R', C.white, 0.05)); for (const k of ['L', 'R']) { const F = footFrame(k); for (const s of [-0.6, -0.2, 0.25, 0.65]) for (const side of [-1, 1]) { const p = F.mid.clone().addScaledVector(LEG[k].fd, s * F.len); g.add(at(mk(sph(0.05), C.white), p.x + LEG[k].fd.z * side * 0.17, F.y - 0.04, p.z - LEG[k].fd.x * side * 0.17)); } } return g; } },
+    { id: 'fluffy', name: '毛毛雪靴', c: C.tan, lift: 0.1, build: ctx => grp(shoesG(C.tan, ctx, { y0: 0.95, d: 0.09, extra: (g, k, c, R) => { const p = c.getPointAt(0); g.add(at(mk(smooth(new T.TorusGeometry(R(0) + 0.04, 0.09, 12, 40)), C.white), p.x, p.y, p.z, PI / 2)); } }), sole('L', '#8a6a48', 0.06), sole('R', '#8a6a48', 0.06)) },
+  ],
+  pet: [
+    { id: 'mini', name: '迷你人貓', c: C.white, build: () => { const m = cloneCat(); m.scale.setScalar(0.3); const g = petAt(wrapPet(m), 0.6); g.userData.noDispose = true; return hop(g, 0.08, 2.5); } },
+    { id: 'shiba', name: '柴犬', c: '#e0904a', build: () => { const O = '#e0904a'; return hop(petAt(wrapPet(at(mk(blob(0.36, 0.3, 0.5, { e: 0.8 }), O), 0, 0.58, 0), at(mk(blob(0.25, 0.2, 0.34, { e: 0.9 }), C.cream), 0, 0.48, 0.12), leg4(O, 0.2, 0.3, 0.5, 0.08, 0.09), at(mk(blob(0.33, 0.29, 0.29, { e: 0.85 }), O), 0, 1.0, 0.4), at(mk(blob(0.17, 0.12, 0.14, { e: 0.9 }), C.cream), 0, 0.92, 0.66), at(new T.Mesh(sph(0.05), BLACK), 0, 0.98, 0.8), peyes(0, 1.07, 0.66, 0.045, 0.14), at(mk(puff([[-0.12, 0], [0.12, 0], [0, 0.24]], 0.06), O), -0.18, 1.22, 0.36, 0, 0, 0.25), at(mk(puff([[-0.12, 0], [0.12, 0], [0, 0.24]], 0.06), O), 0.18, 1.22, 0.36, 0, 0, -0.25), at(mk(smooth(new T.TorusGeometry(0.13, 0.065, 12, 32)), O), 0, 0.92, -0.5, 0, PI / 2, 0)))); } },
+    { id: 'bird', name: '頭上小鳥', c: C.sky, onChar: true, build: ctx => { const g = new T.Group(), b = grp(at(mk(blob(0.26, 0.22, 0.25, { e: 0.9 }), C.sky), 0, 0.22, 0), at(mk(blob(0.17, 0.13, 0.12, { e: 1 }), C.white), 0, 0.18, 0.14), at(mk(lathe([[0, 0], [0.07, 0], [0, 0.16]], 16), C.orange), 0, 0.28, 0.24, PI / 2), peyes(0, 0.34, 0.2, 0.035, 0.1), at(mk(puff(circ(0.14, 20, 0.08), 0.03), '#6aa8d8'), -0.25, 0.22, 0, 0, PI / 2, 0.4), at(mk(puff(circ(0.14, 20, 0.08), 0.03), '#6aa8d8'), 0.25, 0.22, 0, 0, PI / 2, -0.4)); g.add(b); at(g, 0.15, ctx.hatTop, 0.1, 0, 0.3, 0); g.userData.tick = t => { b.position.y = Math.max(0, Math.sin(t * 4)) * 0.08; }; return g; } },
+    { id: 'fishbowl', name: '金魚缸', c: C.orange, build: () => { const fish = grp(at(mk(blob(0.16, 0.1, 0.07, { e: 0.9 }), C.orange), 0, 0, 0), at(mk(puff([[0, 0], [0.12, 0.1], [0.12, -0.1]], 0.02), C.orange), 0.14, 0, 0), at(new T.Mesh(sph(0.02), BLACK), -0.1, 0.03, 0.05)); const fh = at(new T.Group(), 0, 0.42, 0); fh.add(at(fish, 0.25, 0, 0, 0, PI / 2, 0)); const g = petAt(grp(new T.Mesh(new T.LatheGeometry([[0, 0], [0.45, 0], [0.62, 0.3], [0.6, 0.65], [0.42, 0.85], [0.44, 0.9]].map(([x, y]) => new T.Vector2(x, y)), 48), glass('#cfeefc', 0.35)), new T.Mesh(new T.LatheGeometry([[0, 0.02], [0.44, 0.02], [0.6, 0.3], [0.58, 0.62], [0, 0.62]].map(([x, y]) => new T.Vector2(x, y)), 48), glass('#7fc6ef', 0.3)), at(new T.Mesh(new T.TorusGeometry(0.44, 0.02, 6, 48), INK), 0, 0.9, 0, PI / 2), at(new T.Mesh(new T.TorusGeometry(0.45, 0.02, 6, 48), INK), 0, 0.01, 0, PI / 2), fh, ...[[-0.2, 0.08], [0.1, 0.1], [0.25, -0.1], [-0.05, -0.2]].map(([x, z], i) => at(mk(sph(0.07), [C.pink, C.mint, C.lilac, C.yellow][i]), x, 0.07, z))), 0); g.userData.tick = t => { fh.rotation.y = t * 0.8; }; return g; } },
+    { id: 'snail', name: '蝸牛', c: '#c98f6a', build: () => { const sp = []; for (let i = 0; i <= 60; i++) { const a = i / 60 * PI * 5, r = 0.33 * (1 - i / 66); sp.push([Math.cos(a) * r, Math.sin(a) * r]); } const g = petAt(wrapPet(at(mk(blob(0.2, 0.37, 0.37, { e: 1 }), '#c98f6a'), 0, 0.48, -0.08), mk(ttube(sp.map(([zz, yy]) => new V(0.205, 0.48 + yy, -0.08 + zz)), 0.016, { seg: 120, N: 6 }), C.black), mk(ttube(sp.map(([zz, yy]) => new V(-0.205, 0.48 + yy, -0.08 + zz)), 0.016, { seg: 120, N: 6 }), C.black), mk(ttube([new V(0, 0.08, -0.45), new V(0, 0.09, 0.15), new V(0, 0.22, 0.42), new V(0, 0.42, 0.5)], 0.12, { cap0: true, cap1: true }), C.cream), mk(ttube([new V(-0.05, 0.5, 0.5), new V(-0.12, 0.78, 0.55)], 0.025, { seg: 4, N: 8 }), C.cream), mk(ttube([new V(0.05, 0.5, 0.5), new V(0.12, 0.78, 0.55)], 0.025, { seg: 4, N: 8 }), C.cream), at(new T.Mesh(sph(0.05), BLACK), -0.12, 0.8, 0.55), at(new T.Mesh(sph(0.05), BLACK), 0.12, 0.8, 0.55)), 0.9); return g; } },
+    { id: 'frog', name: '青蛙', c: C.green, build: () => hop(petAt(wrapPet(at(mk(blob(0.45, 0.3, 0.4, { e: 0.8 }), C.green), 0, 0.3, 0), at(mk(blob(0.3, 0.16, 0.2, { e: 0.9 }), '#d7ecb8'), 0, 0.22, 0.24), at(mk(sph(0.15), C.green), -0.2, 0.6, 0.2), at(mk(sph(0.15), C.green), 0.2, 0.6, 0.2), peyes(0, 0.64, 0.33, 0.06, 0.2), line([new V(-0.25, 0.36, 0.38), new V(0, 0.3, 0.42), new V(0.25, 0.36, 0.38)], 0.018), at(mk(blob(0.18, 0.08, 0.26, { e: 0.9 }), C.green), -0.42, 0.1, 0.05), at(mk(blob(0.18, 0.08, 0.26, { e: 0.9 }), C.green), 0.42, 0.1, 0.05))), 0.12, 2) },
+    { id: 'bunny', name: '兔子', c: C.white, build: () => { const ear = [[-0.08, 0], [0.08, 0], [0.07, 0.48], [0, 0.55], [-0.07, 0.48]]; return hop(petAt(wrapPet(at(mk(blob(0.36, 0.38, 0.34, { e: 0.9 }), C.white), 0, 0.4, 0), at(mk(blob(0.3, 0.27, 0.27, { e: 0.9 }), C.white), 0, 0.92, 0.12), at(mk(puff(ear, 0.05), C.white), -0.12, 1.1, 0.08, 0, 0, 0.15), at(mk(puff(ear, 0.05), C.white), 0.12, 1.1, 0.08, 0, 0, -0.15), at(mk(sph(0.11), C.white), 0, 0.3, -0.36), peyes(0, 0.98, 0.36, 0.045, 0.12), at(mk(sph(0.04), C.pink), 0, 0.9, 0.39), at(mk(blob(0.12, 0.07, 0.18, { e: 0.9 }), C.white), -0.18, 0.06, 0.25), at(mk(blob(0.12, 0.07, 0.18, { e: 0.9 }), C.white), 0.18, 0.06, 0.25))), 0.1, 3); } },
+    { id: 'chick', name: '小雞', c: C.yellow, build: () => hop(petAt(wrapPet(at(mk(sph(0.33), C.yellow), 0, 0.38, 0), at(mk(sph(0.22), C.yellow), 0, 0.8, 0.05), at(mk(lathe([[0, 0], [0.06, 0], [0, 0.14]], 16), C.orange), 0, 0.77, 0.26, PI / 2), peyes(0, 0.86, 0.22, 0.035, 0.09), at(mk(puff(circ(0.16, 20, 0.09), 0.03), C.yellow), -0.33, 0.42, 0, 0, PI / 2, 0.5), at(mk(puff(circ(0.16, 20, 0.09), 0.03), C.yellow), 0.33, 0.42, 0, 0, PI / 2, -0.5), mk(ttube([new V(-0.12, 0.08, 0), new V(-0.12, 0.0, 0.08)], 0.03, { seg: 4, N: 6, cap1: true }), C.orange), mk(ttube([new V(0.12, 0.08, 0), new V(0.12, 0.0, 0.08)], 0.03, { seg: 4, N: 6, cap1: true }), C.orange), mk(ttube([new V(0, 1.0, 0.05), new V(0.03, 1.12, 0.02)], 0.025, { seg: 4, N: 6, cap1: true }), C.yellow))), 0.07, 5) },
+    { id: 'duck', name: '黃色小鴨', c: C.yellow, build: () => { const g = petAt(wrapPet(at(mk(blob(0.42, 0.3, 0.52, { e: 0.9 }), C.yellow), 0, 0.3, 0), at(mk(sph(0.26), C.yellow), 0, 0.78, 0.25), at(mk(blob(0.14, 0.05, 0.14, { e: 0.8 }), C.orange), 0, 0.73, 0.52), peyes(0, 0.86, 0.45, 0.04, 0.12), at(mk(puff([[-0.12, 0], [0.12, 0], [0, 0.25]], 0.05), C.yellow), 0, 0.42, -0.5, -0.6))); g.userData.tick = t => { g.children[0].rotation.z = Math.sin(t * 2) * 0.08; }; return g; } },
+    { id: 'mouse', name: '小老鼠', c: C.gray, build: () => hop(petAt(wrapPet(at(mk(blob(0.3, 0.26, 0.42, { e: 0.85 }), C.gray), 0, 0.27, 0), at(mk(blob(0.22, 0.2, 0.26, { e: 0.9, taper: 0 }), C.gray), 0, 0.42, 0.4), at(mk(puff(circ(0.17), 0.04), C.gray), -0.18, 0.66, 0.32), at(mk(puff(circ(0.17), 0.04), C.gray), 0.18, 0.66, 0.32), at(mk(puff(circ(0.1), 0.02), C.pink), -0.18, 0.66, 0.36), at(mk(puff(circ(0.1), 0.02), C.pink), 0.18, 0.66, 0.36), at(mk(sph(0.05), C.pink), 0, 0.42, 0.67), peyes(0, 0.5, 0.6, 0.035, 0.1), mk(ttube([new V(0, 0.2, -0.4), new V(0.1, 0.12, -0.7), new V(-0.15, 0.3, -0.95), new V(0, 0.5, -1.0)], 0.025, { cap1: true }), C.pink))), 0.05, 6) },
+    { id: 'turtle', name: '烏龜', c: C.green, build: () => petAt(wrapPet(at(mk(blob(0.55, 0.38, 0.62, { e: 0.8 }), PT.hex('#5f9d5a', '#3d6b3a')), 0, 0.32, 0), at(mk(blob(0.5, 0.07, 0.58, { e: 0.6 }), C.tan), 0, 0.12, 0), at(mk(blob(0.18, 0.16, 0.2, { e: 1 }), '#9cc48a'), 0, 0.3, 0.72), peyes(0, 0.36, 0.86, 0.035, 0.08), ...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([sx, sz]) => at(mk(blob(0.12, 0.08, 0.14, { e: 1 }), '#9cc48a'), sx * 0.45, 0.08, sz * 0.4))), 0.7) },
+    { id: 'hedgehog', name: '刺蝟', c: C.brown, build: () => { const g = wrapPet(at(mk(blob(0.45, 0.36, 0.5, { e: 0.9 }), '#8a6040'), 0, 0.38, 0), at(mk(blob(0.25, 0.22, 0.24, { e: 0.9 }), C.cream), 0, 0.35, 0.36), at(new T.Mesh(sph(0.05), BLACK), 0, 0.38, 0.62), peyes(0, 0.45, 0.52, 0.035, 0.1)); const cone = lathe([[0, 0], [0.07, 0], [0, 0.2]], 12); for (let i = 0; i < 46; i++) { const u = rnd() * 2 - 1, a = rnd() * PI * 2, dir = new V(Math.sqrt(1 - u * u) * Math.cos(a), Math.abs(u) * 0.9 + 0.1, Math.sqrt(1 - u * u) * Math.sin(a) - 0.3).normalize(); if (dir.z > 0.35) continue; const c = mk(cone, '#5a3a24'); c.position.set(dir.x * 0.42, 0.38 + dir.y * 0.33, dir.z * 0.46); c.quaternion.setFromUnitVectors(new V(0, 1, 0), dir); g.children[0].add(c); } return hop(petAt(g), 0.05, 3); } },
+    { id: 'octopus', name: '章魚', c: C.pink, build: () => { const g = wrapPet(at(mk(blob(0.42, 0.45, 0.42, { e: 1 }), '#ee8aa6'), 0, 0.85, 0), peyes(0, 0.88, 0.4, 0.055, 0.14), at(mk(sph(0.06), '#d65f80'), 0, 0.72, 0.41)); for (let i = 0; i < 8; i++) { const a = i / 8 * PI * 2, c = Math.cos(a), s = Math.sin(a); g.children[0].add(mk(ttube([new V(c * 0.2, 0.55, s * 0.2), new V(c * 0.45, 0.2, s * 0.45), new V(c * 0.7, 0.08, s * 0.7), new V(c * 0.78, 0.22, s * 0.78)], t => 0.1 - 0.05 * t, { cap1: true, seg: 24, N: 12 }), '#ee8aa6')); } const r = petAt(g); r.userData.tick = t => { g.children[0].scale.y = 1 + Math.sin(t * 3) * 0.04; }; return r; } },
+    { id: 'ghost', name: '小幽靈', c: C.white, build: () => { const body = grp(mk(lathe([[0, -0.5], [0.42, -0.5], [0.45, -0.1], [0.4, 0.25], [0.22, 0.48], [0, 0.52]]), toon(C.white, { transparent: true, opacity: 0.92 })), ...[-0.28, 0, 0.28].map(x => at(mk(sph(0.15), toon(C.white, { transparent: true, opacity: 0.92 })), x, -0.5, 0.1)), at(new T.Mesh(sph(0.06), BLACK), -0.13, 0.12, 0.4), at(new T.Mesh(sph(0.06), BLACK), 0.13, 0.12, 0.4), at(mk(sph(0.05), C.pink, false), -0.25, 0.0, 0.37), at(mk(sph(0.05), C.pink, false), 0.25, 0.0, 0.37)); const g = at(grp(body), -2.95, 5.4, 0.4, 0, 0.4, 0); g.userData.tick = t => { body.position.y = Math.sin(t * 1.6) * 0.15; body.rotation.z = Math.sin(t * 1.1) * 0.08; }; return g; } },
+    { id: 'bear', name: '台灣黑熊', c: '#2a2a2e', build: () => { const B = '#34343a'; return hop(petAt(wrapPet(at(mk(blob(0.48, 0.5, 0.42, { e: 0.85 }), B), 0, 0.5, 0), at(mk(blob(0.38, 0.33, 0.33, { e: 0.9 }), B), 0, 1.15, 0.08), at(mk(sph(0.12), B), -0.3, 1.42, 0.02), at(mk(sph(0.12), B), 0.3, 1.42, 0.02), at(mk(blob(0.16, 0.12, 0.12, { e: 1 }), C.tan), 0, 1.06, 0.38), at(new T.Mesh(sph(0.05), BLACK), 0, 1.12, 0.5), at(mk(sph(0.055), C.white, false), -0.14, 1.24, 0.33), at(mk(sph(0.055), C.white, false), 0.14, 1.24, 0.33), at(new T.Mesh(sph(0.03), BLACK), -0.14, 1.24, 0.38), at(new T.Mesh(sph(0.03), BLACK), 0.14, 1.24, 0.38), mk(puff([[-0.34, 0.78], [-0.24, 0.78], [0, 0.56], [0.24, 0.78], [0.34, 0.78], [0, 0.45]].slice(0, 3).concat([[0, 0.45]]), 0.03, { cz: 0.41, e: 0.5 }), C.white), mk(puff([[0, 0.56], [0.24, 0.78], [0.34, 0.78], [0, 0.45]], 0.03, { cz: 0.41, e: 0.5 }), C.white), at(mk(blob(0.13, 0.1, 0.18, { e: 1 }), B), -0.25, 0.08, 0.28), at(mk(blob(0.13, 0.1, 0.18, { e: 1 }), B), 0.25, 0.08, 0.28))), 0.05, 2); } },
+  ],
+};
+const CATS = [['hat', '帽子'], ['glasses', '眼鏡'], ['tie', '領帶'], ['neck', '項鍊'], ['top', '衣服'], ['pants', '褲子'], ['gloves', '手套'], ['shoes', '鞋子'], ['pet', '寵物']];
+const find = (cat, id) => id ? ITEMS[cat].find(i => i.id === id) : null;
+
+/* ---------- 穿搭層次：每件衣物知道外面有沒有別的衣服 ---------- */
+function makeCtx(st) {
+  const top = find('top', st.top), pants = find('pants', st.pants), hat = find('hat', st.hat);
+  const cov = [top && top.cover, pants && pants.cover].filter(Boolean);
+  const legY = pants && pants.leg ? { knee: 1.9, ankle: 0.62, calf: 1.1 }[pants.leg] : 0;
+  return {
+    surfD: y => cov.reduce((m, c) => y >= c.y0 - 0.05 && y <= c.y1 + 0.05 ? Math.max(m, c.d) : m, 0),
+    sleeve: top && top.sleeve || null,
+    pleg: legY ? { y1: legY, d: 0.05 } : null,
+    hatTop: hat ? hat.top : BY1 + 0.02,
+  };
+}
+
+const state = { hat: null, glasses: null, tie: null, neck: null, top: null, pants: null, gloves: null, shoes: null, pet: null };
+let current = 'pose', bounceT = 9, ticks = [], charLift = 0;
+const skinOut = new T.Group(); char.add(skinOut);
+const rigidOut = new T.Group(); rigidG.add(rigidOut);
+const petRoot = new T.Group(); root.add(petRoot);
+base.traverse(m => { m.userData.keep = true; });
+const SKIN = new Set(['top', 'pants', 'gloves', 'shoes']);
+function rebuildOutfit() {
+  clearGroup(skinOut); clearGroup(rigidOut); clearGroup(petRoot); ticks = [];
+  applyPose(REST); const ctx = makeCtx(state); let lift = 0;
+  for (const [cat] of CATS) {
+    const it = find(cat, state[cat]); if (!it) continue;
+    try {
+      const g = it.build(ctx); if (it.lift) lift = Math.max(lift, it.lift);
+      if (cat === 'pet' && !it.onChar) petRoot.add(g);
+      else if (SKIN.has(cat)) { skinOut.add(skinify(g, ALL)); disposeTree(g); }
+      else rigidOut.add(g);
+    } catch (e) { console.error('build failed', cat, it.id, e); }
+  }
+  bindAll(skinOut);
+  [rigidOut, petRoot].forEach(g => g.traverse(o => { if (o.userData.tick) ticks.push(o.userData.tick); }));
+  charLift = lift; frameCamera();
+}
+
+/* ---------- 縮圖 ---------- */
+const thumbR = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+const TS = 168; thumbR.setPixelRatio(1); thumbR.setSize(TS, TS); thumbR.setClearColor(0x000000, 0);
+const thumbScene = new T.Scene(); addLights(thumbScene);
+const thumbCam = new T.PerspectiveCamera(26, 1, 0.05, 100);
+const thumbs = {}, queue = [];
+function renderThumb(cat, it) {
+  const key = cat + '/' + it.id; if (thumbs[key]) return;
+  let g;
+  try { g = it.build(Object.assign(makeCtx({}), { thumb: cat === 'gloves' })); } catch (e) { console.error('thumb', key, e); thumbs[key] = 'x'; return; }
+  thumbScene.add(g); g.updateMatrixWorld(true);
+  const box = new T.Box3().setFromObject(g), c = box.getCenter(new V()), s = box.getSize(new V());
+  const r = Math.max(s.x, s.y, s.z * 0.6) * 0.5 + 0.05;
+  const dir = new V(0.38, 0.18, 1).normalize(), dist = r / Math.tan(T.MathUtils.degToRad(13)) * 1.08;
+  thumbCam.position.copy(c).addScaledVector(dir, dist); thumbCam.lookAt(c); thumbCam.updateProjectionMatrix();
+  const u = inkMat.uniforms, pr = u.uRes.value.clone(), pt = u.uThick.value, ps = u.uSeed.value;
+  u.uRes.value.set(TS, TS); u.uThick.value = 2.2; u.uSeed.value = 0;
+  thumbR.render(thumbScene, thumbCam);
+  u.uRes.value.copy(pr); u.uThick.value = pt; u.uSeed.value = ps;
+  thumbs[key] = thumbR.domElement.toDataURL('image/png');
+  thumbScene.remove(g); if (!g.userData.noDispose) disposeTree(g);
+  const img = document.getElementById('th-' + cat + '-' + it.id);
+  if (img) img.innerHTML = `<img alt="" src="${thumbs[key]}">`;
+}
+function queueThumbs(cat) { ITEMS[cat].forEach(it => { if (!thumbs[cat + '/' + it.id]) queue.push([cat, it]); }); }
+
+/* ---------- 介面 ---------- */
+const tabsEl = document.getElementById('tabs'), itemsEl = document.getElementById('items'), outfitEl = document.getElementById('outfit');
+function renderUI() {
+  tabsEl.innerHTML = [['pose', '動作'], ...CATS].map(([id, name]) =>
+    `<button class="tab" role="tab" id="tab-${id}" aria-selected="${id === current}" data-cat="${id}">${name}${id !== 'pose' && state[id] ? '<span class="on" aria-hidden="true"></span>' : ''}</button>`).join('');
+  outfitEl.innerHTML = `<span>動作：${pose.name}</span>` + CATS.map(([id, name]) => { const it = find(id, state[id]); return it ? `<span>${name}：${it.name}</span>` : ''; }).join('');
+  if (current === 'pose') {
+    itemsEl.innerHTML = POSES.map(p => `<button class="item pose" id="pose-${p.id}" data-id="${p.id}" aria-pressed="${pose.id === p.id}"><b>${p.name}</b><small>${p.note}</small></button>`).join('');
+    return;
+  }
+  const list = [{ id: null, name: '不穿' }, ...ITEMS[current]];
+  itemsEl.innerHTML = list.map(it => {
+    const key = current + '/' + it.id, th = it.id ? thumbs[key] : null;
+    const inner = !it.id ? '<span class="ph none"></span>' : th && th !== 'x' ? `<img alt="" src="${th}">` : `<span class="ph" style="--a:${it.c}"></span>`;
+    return `<button class="item" id="item-${current}-${it.id || 'none'}" data-id="${it.id || ''}" aria-pressed="${state[current] === it.id}"><span class="thumb" id="th-${current}-${it.id || 'none'}">${inner}</span><span>${it.name}</span></button>`;
+  }).join('');
+  if (!CATS.some(([id]) => state[id])) outfitEl.innerHTML += '<span class="empty">什麼都沒穿，原汁原味的人貓</span>';
+  queueThumbs(current);
+}
+function wear(cat, id) { state[cat] = id; bounceT = 0; renderUI(); rebuildOutfit(); }
+tabsEl.addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) { current = b.dataset.cat; renderUI(); } });
+itemsEl.addEventListener('click', e => { const b = e.target.closest('.item'); if (!b) return; if (current === 'pose') setPose(b.dataset.id); else wear(current, b.dataset.id || null); });
+const busyEl = document.getElementById('busy');
+function setPose(id) {
+  const p = POSES.find(q => q.id === id); if (!p || p === pose) return;
+  pose = p; bounceT = 0; renderUI(); frameCamera();
+}
+document.getElementById('random').onclick = () => {
+  for (const [cat] of CATS) { const l = ITEMS[cat]; state[cat] = Math.random() < (cat === 'pet' ? 0.4 : 0.3) ? null : l[Math.floor(Math.random() * l.length)].id; }
+  bounceT = 0; renderUI(); rebuildOutfit();
+};
+document.getElementById('clear').onclick = () => { for (const [cat] of CATS) state[cat] = null; bounceT = 0; renderUI(); rebuildOutfit(); };
+
+/* ---------- 旋轉 ---------- */
+let rot = 0.3, target = 0.3, vel = 0, drag = null, spin = false, boil = true;
+document.querySelectorAll('.views [data-a]').forEach(b => b.onclick = () => { const a = +b.dataset.a; target = a + Math.round((rot - a) / (PI * 2)) * PI * 2; vel = 0; });
+const spinBtn = document.getElementById('v-spin'), boilBtn = document.getElementById('v-boil');
+spinBtn.onclick = () => { spin = !spin; spinBtn.setAttribute('aria-pressed', spin); };
+boilBtn.onclick = () => { boil = !boil; boilBtn.setAttribute('aria-pressed', boil); };
+const liveBtn = document.getElementById('v-live'); liveBtn.onclick = () => { live = !live; liveBtn.setAttribute('aria-pressed', live); };
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => { drag = { x: e.clientX }; vel = 0; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x; drag.x = e.clientX; target += dx * 0.012; vel = dx * 0.012; });
+const end = () => { drag = null; };
+cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+
+/* ---------- 鏡頭 ---------- */
+function frameCamera() {
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  const pet = !!state.pet && !find('pet', state.pet).onChar;
+  const t = Math.tan(T.MathUtils.degToRad(14)), aspect = w / h;
+  const cx = pose.wide ? (pet ? -0.3 : 0) : pet ? -0.4 : 0.3, half = Math.max(pet ? 4.3 : 3.5, pose.wide ? 4.0 : 0);
+  const jump = pose.anim === 'jump', hh = jump ? 5.3 : 4.7, ly = jump ? 4.5 : 3.9;
+  const d = Math.max(hh / t, half / (t * aspect));
+  camera.aspect = aspect; camera.position.set(cx, ly + 0.5, d); camera.lookAt(cx, ly, 0); camera.updateProjectionMatrix();
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  const pr = renderer.getPixelRatio();
+  inkMat.uniforms.uRes.value.set(w * pr, h * pr);
+  inkMat.uniforms.uThick.value = 2.8 * pr;
+  frameCamera();
+}
+new ResizeObserver(resize).observe(stage); resize();
+
+/* ---------- 動畫：解骨架角度、平滑過渡、加上晃動 ---------- */
+let live = true, jumpY = 0, bobY = 0;
+const _q = new T.Quaternion(), _e = new T.Euler(), TQ = {};
+boneList.forEach(b => TQ[b.name] = new T.Quaternion());
+const fromTo = (a, b) => new T.Quaternion().setFromUnitVectors(a.clone().normalize(), b.clone().normalize());
+function solveChain(names, restPts, tgtPts) {
+  let parentW = new T.Quaternion();
+  for (let i = 0; i < names.length; i++) {
+    const rd = new V().subVectors(restPts[i + 1], restPts[i]).applyQuaternion(parentW), td = new V().subVectors(tgtPts[i + 1], tgtPts[i]);
+    const w = fromTo(rd, td).multiply(parentW);
+    TQ[names[i]].copy(parentW.clone().invert().multiply(w));
+    parentW = w;
+  }
+}
+function animate(dt) {
+  const t = clock, ph = live ? (t * (SPEED[pose.id] || 1)) % 1 : 0;
+  const data = pose.at ? Object.assign({}, pose, pose.at(ph)) : pose;
+  for (const k of ['L', 'R']) {
+    solveChain(LIMB['arm' + k].names, RP['arm' + k], armPoly(data[k]));
+    solveChain(LIMB['leg' + k].names, RP['leg' + k], legPoly((data.legs || LEGS0)[k]));
+  }
+  const sw = live ? 1 : 0;
+  TQ.chest.setFromEuler(_e.set(0.025 * Math.sin(t * 1.1) * sw, 0.03 * Math.sin(t * 0.7) * sw, 0.04 * Math.sin(t * 1.4) * sw));
+  TQ.hips.setFromEuler(_e.set(0, 0, -0.015 * Math.sin(t * 1.4) * sw));
+  for (const k of ['L', 'R']) TQ['arm' + k + '0'].premultiply(_q.setFromEuler(_e.set(0, 0, 0.05 * Math.sin(t * 1.8 + (k === 'L' ? 0 : 1.3)) * sw)));
+  TQ.tail0.setFromEuler(_e.set(0, 0.22 * Math.sin(t * 2.2) * sw, 0.06 * Math.sin(t * 1.5) * sw));
+  TQ.tail1.setFromEuler(_e.set(0, 0.3 * Math.sin(t * 2.2 - 0.9) * sw, 0.1 * Math.sin(t * 1.5 - 0.6) * sw));
+  const a = 1 - Math.exp(-dt * 7);
+  boneList.forEach(b => { if (b !== bones.root) b.quaternion.slerp(TQ[b.name], a); });
+  const tb = (pose.dy ? pose.dy(ph) : 0) * sw + 0.03 * Math.sin(t * 2.8) * sw;
+  bobY += (tb - bobY) * Math.min(1, dt * 10);
+  return bobY;
+}
+/* ---------- 動畫 ---------- */
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last = performance.now(), nextBlink = 2.5, clock = 0, seedStep = 0;
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
+  if (!drag) { target += vel; vel *= 0.92; if (Math.abs(vel) < 1e-4) vel = 0; }
+  if (spin && !drag) target += dt * 0.8;
+  rot += (target - rot) * Math.min(1, dt * 10);
+  root.rotation.y = rot;
+  bounceT += dt;
+  const s = reduce ? 0 : Math.sin(bounceT * 22) * Math.exp(-bounceT * 7);
+  char.scale.set(1 + 0.04 * s, 1 - 0.06 * s, 1 + 0.04 * s);
+  nextBlink -= dt;
+  eyesLive.forEach(m => m.scale.y = nextBlink < 0 ? 0.12 : 1);
+  if (nextBlink < -0.13) nextBlink = 2 + Math.random() * 3;
+  ticks.forEach(fn => fn(clock));
+  const dy = animate(dt);
+  if (pose.anim === 'jump') { const j = live ? 0.15 + Math.abs(Math.sin(clock * 3.2)) * 0.9 : 0.4; jumpY += (j - jumpY) * Math.min(1, dt * 12); }
+  else jumpY += (0 - jumpY) * Math.min(1, dt * 8);
+  char.position.y = charLift + dy + jumpY; shadow.scale.set(1 - (dy + jumpY) * 0.3, 0.5 - (dy + jumpY) * 0.15, 1);
+  if (boil && !reduce) { const st = Math.floor(clock * 7); if (st !== seedStep) { seedStep = st; inkMat.uniforms.uSeed.value = (st % 4) * 3.7; } }
+  else inkMat.uniforms.uSeed.value = 0;
+  for (let i = 0; i < 2 && queue.length; i++) { const [c, it] = queue.shift(); renderThumb(c, it); }
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+renderUI(); rebuildOutfit();
+requestAnimationFrame(loop);
+</script>
+
+</body></html>
