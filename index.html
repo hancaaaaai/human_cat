@@ -120,6 +120,8 @@ kbd{font:600 11px/1 ui-monospace,monospace;border:1.5px solid currentColor;borde
 .g-act:disabled{background:#fff;opacity:.6}
 .g-fade{position:absolute;inset:0;background:#0d0e12;opacity:0;transition:opacity .6s;pointer-events:none}
 .g-fade.on{opacity:1}
+.g-fade{z-index:5}.g-dlg{z-index:6}
+.g-fade.scene::after{content:attr(data-label);position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);color:#fff;font:400 34px var(--display);white-space:nowrap}
 .g-dlg.narr p{color:#585c66;font-style:italic}
 .g-mirror{position:absolute;inset:10px;border:14px solid #d9b98a;border-radius:46% 46% 18px 18px/30% 30% 18px 18px;box-shadow:inset 0 0 0 3px #16171b,0 0 0 3px #16171b,inset 0 0 60px rgba(160,210,240,.45);pointer-events:none}
 .g-modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(22,23,27,.35);padding:14px}
@@ -148,6 +150,7 @@ kbd{font:600 11px/1 ui-monospace,monospace;border:1.5px solid currentColor;borde
 .g-pcbox canvas{display:block;position:static!important;inset:auto;width:100%!important;height:auto!important;max-height:calc(100svh - 170px);object-fit:contain;border-radius:8px;background:#fff6ec;touch-action:none;cursor:pointer}
 .g-pcbox p{margin:6px 0 0;font-size:12px;color:#c9ccd3;text-align:center}
 @media (max-width:620px){.g-book{grid-template-columns:1fr}.g-dlist{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:2px dashed #c9b28e;border-radius:16px 16px 0 0}.d-tab{flex:1 1 40%}}
+@media (max-width:700px){.g-toast{top:150px;white-space:normal;max-width:calc(100% - 40px);text-align:center}}
 @media (pointer:coarse),(max-width:700px){.g-joy,.g-act{display:block}.g-prompt{bottom:150px}.g-dlg{bottom:150px}}
 @media (max-width:860px){body.game .stage{height:calc(100svh - 32px)}}
 @media (max-width:860px){
@@ -1077,6 +1080,7 @@ const ITEMS = {
     { id: 'pleat', name: '百褶裙', c: C.navy, cover: { y0: 2.5, y1: 3.8, d: 0.08 }, build: () => torso(C.navy, { y0: 2.5, y1: 3.8, dFn: y => 0.08 + 0.42 * Math.pow((3.8 - y) / 1.3, 1.1), mod: a => 1 + 0.025 * Math.abs(Math.sin(a * 14)) }) },
     { id: 'swim', name: '海灘短褲', c: C.teal, cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'knee', build: () => pantsBase(PT.floral(C.teal, C.yellow, C.white), { legY: 2.2, ld: 0.08 }) },
     { id: 'slacks', name: '西裝褲', c: '#3a3f55', cover: { y0: 2.65, y1: 3.8, d: 0.08 }, leg: 'ankle', build: () => pantsBase('#3a3f55', { legY: 0.62 }) },
+    { id: 'boxers', name: '四角內褲', c: '#8fb3e0', cover: { y0: 2.65, y1: 3.8, d: 0.08 }, build: () => pantsBase(PT.check('#8fb3e0', '#ffffff', 4), { legY: 2.75 }) },
   ],
   gloves: [
     { id: 'toon', name: '卡通白手套', c: '#f4f4f4', build: ctx => glovesG('#f4f4f4', ctx, { tc: 0.78, flare: 0.07, extra: (h) => { for (const dx of [-0.08, 0.04, 0.16]) h.add(line([new V(dx, 0.02, 0.27), new V(dx - 0.02, -0.12, 0.25)].map(p => p), 0.014)); } }) },
@@ -1309,12 +1313,13 @@ function animate(dt) { return animateRig(mainRig, GAME.on ? GAME.pose : pose, cl
    ---------------------------------------------------------------------
    想新增內容，只要改下面的 DIARY 資料區塊：
      me      主角（就是你）
-     people  出現在遊戲裡的人
+     people  家裡的人。spots 是他們會待的地方，schedule 是會輪流去的地方
      events  日記的每一頁（完成任務後解鎖）
      quests  任務：steps 一步一步照順序走
-               at: 'sis'（找某個人，填人物 id）或 'desk'（書桌）
+               at: 人物 id（sis/dad/mom）或物品 id（desk/door/slide）
                lines: [說話的人, 台詞]，說話的人填 null 就是旁白
                give: 拿到的東西、done: true 代表最後一步
+               repeat: true 代表睡一覺起來會再發生一次
    ===================================================================== */
 const DIARY = {
   me: {
@@ -1329,19 +1334,42 @@ const DIARY = {
   people: [
     {
       id: 'sis', name: '游善妤', nick: '善妤', rel: '妹妹',
-      look: '超白、非常高瘦，撲克臉，偶爾大笑',
-      traits: '宅女、懶惰、蠻搞笑',
-      item: 'iPad',
-      opener: '幹嘛?',
-      chatter: ['哈哈哈哈哈', '哈哈哈哈哈', '唉走開'],
-      memory: '',
-      // 3D 外觀
-      color: '#ffffff', scale: [0.84, 1.22, 0.84],
+      info: [['樣子', '超白、非常高瘦，撲克臉，偶爾大笑'], ['個性', '宅女、懶惰、蠻搞笑'], ['手上總是', 'iPad']],
+      opener: '幹嘛?', chatter: ['哈哈哈哈哈', '哈哈哈哈哈', '唉走開'], reply: '哈哈哈哈哈',
+      color: '#ffffff', scale: [0.84, 1.22, 0.84], face: 'poker',
       outfit: { top: 'tee', pants: 'shorts', shoes: 'canvas' },
-      pos: [7.6, 1.2], head: -0.75,
+      spots: { bag: { pos: [-23, 14], head: 0.64, pose: 'sit', lower: 1.0, prop: 'pad', turn: true } },
+      schedule: ['bag'], start: 'bag',
+    },
+    {
+      id: 'dad', name: '爸爸', nick: '爸爸', rel: '爸爸',
+      info: [['樣子', '有點胖、有啤酒肚，在家常常只穿一條內褲'], ['常做的事', '躺在房間床上滑手機、在前陽台做木工、在客廳吃飯'], ['個性', '跟一般的爸爸很像：話不多，但會關心你吃飽沒']],
+      opener: '怎樣？', reply: '講話好聽一點啦',
+      color: '#f1ebe0', scale: [1.14, 0.98, 1.16], face: 'dad', belly: true,
+      outfit: { pants: 'boxers', shoes: 'flipflop' },
+      spots: {
+        eat: { pos: [-6, 0.4], head: 0, pose: 'sit', lower: 0.75, chatter: ['麵線咧？', '吃飽沒？', '遙控器在哪'] },
+        bed: { pos: [19.6, -11.6], head: 0, pose: 'lie', prop: 'phoneLie', bed: 2.55, chatter: ['（滑手機）', '哈哈哈哈', '這影片好好笑'] },
+        wood: { pos: [8, 24.4], head: 0, pose: 'hammer', chatter: ['叩叩叩', '這個我自己做的', '再一下就好'], knock: true },
+      },
+      schedule: ['eat', 'bed', 'wood'], start: 'eat',
+    },
+    {
+      id: 'mom', name: '媽媽', nick: '媽媽', rel: '媽媽',
+      info: [['樣子', '比較矮小'], ['身分', '台灣原住民'], ['常做的事', '在廚房煮飯、後陽台曬衣服、前陽台抽菸、客廳看手機 AI 短劇'], ['個性', '跟一般的媽媽很像：一直問你吃飯了沒，叫你衣服收一收']],
+      opener: '幹嘛？肚子餓了喔？', reply: '你跟誰學的啦',
+      color: '#faf3e8', scale: [0.94, 0.8, 0.94], face: 'mom',
+      outfit: { top: 'stripe', pants: 'capri', shoes: 'flipflop' },
+      spots: {
+        cook: { pos: [-10, -21.4], head: PI, pose: 'stir', steam: true, chatter: ['吃飯了！', '今天煮你愛吃的', '去洗手'] },
+        laundry: { pos: [0, -29.2], head: PI, pose: 'up', chatter: ['衣服收一收', '今天太陽很好', '誰的襪子又翻面'] },
+        smoke: { pos: [-6.5, 27.4], head: 0, pose: 'think', smoke: true, chatter: ['呼——', '抽完這根就好', '（吐煙）'] },
+        drama: { pos: [24.4, 3.6], head: PI / 2, pose: 'sit', lower: 0.85, prop: 'phone', chatter: ['總裁怎麼可以這樣！', '她才是真千金啦', '又被騙了', '這集超好看'] },
+      },
+      schedule: ['cook', 'laundry', 'smoke', 'drama'], start: 'smoke',
     },
   ],
-  place: { name: '我們家', rooms: ['善美的房間', '善妤的房間'] },
+  place: { name: '我們家' },
   events: [
     {
       id: 'cable', date: '2026-10-12', title: '借 type C 線',
@@ -1349,12 +1377,24 @@ const DIARY = {
       text: '我跟善妤借線，結果沒辦法用。又跟她借另外一條，又沒用。又借了另外一條。',
       mood: '煩躁又搞笑',
     },
+    {
+      id: 'noodle', date: '', tag: '常常', title: '幫爸爸買麵線',
+      place: '巷口的麵線攤、客廳', who: ['善美', '爸爸'],
+      text: '爸爸叫我去買麵線，大腸的，不要香菜。這件事我常常做。',
+      mood: '習慣了',
+    },
+    {
+      id: 'smoke', date: '', tag: '常常', title: '叫媽媽別讓煙跑進來',
+      place: '前陽台、客廳', who: ['善美', '媽媽'],
+      text: '媽媽在前陽台抽菸，煙一直飄進客廳。叫她不要讓煙味跑進來，最後還是我自己去把落地窗關起來。',
+      mood: '有點無奈',
+    },
   ],
   quests: [
     {
-      id: 'cable', title: '借 type C 線', from: 'sis', event: 'cable', reward: '一條可以用的線',
+      id: 'cable', title: '借 type C 線', event: 'cable',
       steps: [
-        { at: 'sis', label: '跟善妤借線', hint: '去隔壁跟善妤借 type C 線', give: 'type C 線（第一條）',
+        { at: 'sis', label: '跟善妤借線', hint: '去善妤的房間借 type C 線', give: 'type C 線（第一條）',
           lines: [['善妤', '幹嘛?'], ['善美', '借我 type C 線'], [null, '善妤從一堆線裡抽了一條丟過來。']] },
         { at: 'desk', label: '插上線試試看', hint: '回自己的書桌插上去試試', fail: true,
           lines: [[null, '插上去……'], [null, '沒反應。'], ['善美', '三小拉']] },
@@ -1368,12 +1408,33 @@ const DIARY = {
           lines: [[null, '插上去……'], [null, '叮！可以用了！'], ['善美', '挖這很屌欸']] },
       ],
     },
+    {
+      id: 'noodle', title: '幫爸爸買麵線', event: 'noodle', repeat: true,
+      steps: [
+        { at: 'dad', label: '跟爸爸說話', hint: '爸爸好像有事找你', give: '爸爸給的 100 元',
+          lines: [['爸爸', '欸，你等一下有要出門嗎'], ['爸爸', '幫我買一碗麵線，大腸的'], ['爸爸', '不要香菜喔'], ['善美', '好啦']] },
+        { at: 'door', label: '出門買麵線', hint: '從客廳的大門出去，巷口就有麵線攤', run: 'stall' },
+        { at: 'dad', label: '把麵線拿給爸爸', hint: '把麵線拿給爸爸', done: true,
+          lines: () => SAVE.cil
+            ? [['善美', '麵線買回來了'], ['爸爸', '……怎麼有香菜'], ['善美', '三小拉，我忘了'], ['爸爸', '算了，挑掉就好，謝啦']]
+            : [['善美', '麵線買回來了'], ['爸爸', '讚啦，還是你最懂'], ['善美', '挖這很屌欸，我也想吃']] },
+      ],
+    },
+    {
+      id: 'smoke', title: '叫媽媽別讓煙跑進來', event: 'smoke', repeat: true,
+      steps: [
+        { at: 'mom', label: '叫媽媽別讓煙跑進來', hint: '前陽台的煙一直飄進客廳……', cond: () => momSmoking() && SAVE.slideOpen, wait: '等媽媽去前陽台抽菸的時候',
+          lines: [['善美', '媽！煙都跑進來了啦'], ['媽媽', '哎唷，好啦好啦'], ['媽媽', '那你把門關起來嘛']] },
+        { at: 'slide', label: '把落地窗關起來', hint: '把客廳的落地窗關起來', done: true, after: () => { SAVE.slideOpen = false; },
+          lines: [[null, '把落地窗拉上。'], [null, '媽媽隔著玻璃比了一個 OK。'], ['善美', '呼，終於沒有煙味了']] },
+      ],
+    },
   ],
 };
 
-const GAME = { on: false, pos: new V(-7, 0, 4), vel: new V(), head: 0, spd: 0, camYaw: 0.15, camPitch: 0.42, camDist: 24, pose: null, moving: false, sitting: null, phone: null, mirror: null, near: null, lock: false };
-const SAVE_KEY = 'rencat-diary-v1';
-const SAVE0 = () => ({ q: {}, diary: [], met: {}, hold: null, night: false, best: 0, outfit: null, pose: 'akimbo', seenIntro: false });
+const GAME = { on: false, pos: new V(-25, 0, -12), vel: new V(), head: 0, spd: 0, camYaw: 0.15, camPitch: 0.45, camDist: 25, pose: null, moving: false, sitting: null, phone: null, mirror: null, near: null, lock: false };
+const SAVE_KEY = 'rencat-diary-v2';
+const SAVE0 = () => ({ q: {}, diary: [], met: {}, hold: null, night: false, best: 0, outfit: null, pose: 'akimbo', seenIntro: false, slideOpen: true, bowl: false, cil: false, day: 1 });
 let SAVE = SAVE0();
 try { const raw = localStorage.getItem(SAVE_KEY); if (raw) SAVE = Object.assign(SAVE0(), JSON.parse(raw)); } catch (e) {}
 function saveGame() {
@@ -1388,6 +1449,17 @@ const SIT = { id: 'sit', name: '坐下', lower: 1.5, L: { arm: [[-1.3, 5.4, 0.05
 const POSE_BY = id => POSES.find(p => p.id === id) || POSES[0];
 const WALKP = POSE_BY('walk');
 const sitP = lower => Object.assign({}, SIT, { lower });
+const FWD_R = { arm: [[1.25, 5.3, 0.2], [1.6, 5.05, 0.7], [1.75, 4.7, 1.3], [1.65, 4.45, 1.8]], hand: [1.6, 4.35, 2.15], r: [0, -1.45, 0] };
+const YA = new V(0, 1, 0);
+const NPC_POSES = {
+  lie: { id: 'lie', L: rotArm(SIT.L, XA, -0.9), R: rotArm(SIT.R, XA, -0.9) },
+  hammer: { id: 'hammer', L: DOWN.L, R: FWD_R, at: ph => ({ R: rotArm(FWD_R, XA, -0.7 * Math.abs(Math.sin(ph * PI * 2))) }) },
+  stir: { id: 'stir', L: { arm: FWD_R.arm.map(p => [-p[0], p[1], p[2]]), hand: [-FWD_R.hand[0], FWD_R.hand[1], FWD_R.hand[2]], r: [0, 1.45, 0] }, R: FWD_R, at: ph => ({ R: rotArm(FWD_R, YA, 0.3 * Math.sin(ph * PI * 2)) }) },
+};
+function npcPose(sp) {
+  if (sp.pose === 'sit') return sitP(sp.lower || 1);
+  return NPC_POSES[sp.pose] || POSE_BY(sp.pose);
+}
 
 /* ---------- 給 NPC 用的骨架複本 ---------- */
 function makeRig() {
@@ -1401,19 +1473,23 @@ function makeRig() {
   const TQr = {}; list.forEach(b => TQr[b.name] = new T.Quaternion());
   return { bones: map, list, skel, TQ: TQr, bob: 0 };
 }
-/* 撲克臉：平平的嘴；大笑時換成張開的嘴和瞇瞇眼 */
-function personFace(rg) {
-  const eyes = [], laughEyes = new T.Group();
+/* 臉：撲克臉（善妤）、爸爸、媽媽；大笑時換成張開的嘴和瞇瞇眼 */
+function personFace(rg, def) {
+  const eyes = [], laughEyes = new T.Group(), extra = new T.Group();
   for (const k of ['L', 'R']) {
     const [x, y] = EYE[k];
-    const e = at(new T.Mesh(sph(0.12), BLACK), x, y, 0.775); e.scale.z = 0.42; rg.add(e); eyes.push(e);
+    const e = at(new T.Mesh(sph(def.face === 'dad' ? 0.11 : 0.12), BLACK), x, y, 0.775); e.scale.z = 0.42; rg.add(e); eyes.push(e);
     laughEyes.add(mk(ttube([new V(x - 0.16, y - 0.05, 0.77), new V(x, y + 0.08, 0.785), new V(x + 0.16, y - 0.05, 0.77)], 0.04, { seg: 12, N: 8, cap0: true, cap1: true }), BLACK, false));
+    if (def.face === 'dad') extra.add(mk(ttube([new V(x - 0.2, y + 0.3, 0.77), new V(x + 0.18, y + 0.24, 0.775)], 0.035, { seg: 6, N: 6, cap0: true, cap1: true }), BLACK, false));
+    if (def.face === 'mom') { const b = at(new T.Mesh(sph(0.14), toon('#f4a6b6')), x + (k === 'L' ? -0.1 : 0.1), y - 0.33, 0.755); b.scale.set(1.3, 0.6, 0.25); extra.add(b); }
   }
-  const flat = mk(ttube([new V(-0.36, 5.53, 0.772), new V(-0.05, 5.52, 0.778), new V(0.24, 5.53, 0.772)], 0.032, { seg: 12, N: 8, cap0: true, cap1: true }), BLACK, false);
+  let flat;
+  if (def.face === 'poker') flat = mk(ttube([new V(-0.36, 5.53, 0.772), new V(-0.05, 5.52, 0.778), new V(0.24, 5.53, 0.772)], 0.032, { seg: 12, N: 8, cap0: true, cap1: true }), BLACK, false);
+  else flat = mk(ttube([new V(-0.34, 5.56, 0.772), new V(-0.05, 5.47, 0.78), new V(0.22, 5.56, 0.772)], 0.034, { seg: 12, N: 8, cap0: true, cap1: true }), BLACK, false);
   const open = mk(puff([[-0.4, 5.6], [0.28, 5.6], [0.22, 5.45], [0.06, 5.33], [-0.1, 5.3], [-0.27, 5.35], [-0.38, 5.47]], 0.03, { cz: 0.762, e: 0.5 }), BLACK, false);
   const tongue = at(mk(sph(0.1), toon('#f29bb4'), false), -0.06, 5.38, 0.79); tongue.scale.set(1.3, 0.6, 0.3);
   const laughM = new T.Group(); laughM.add(open, tongue);
-  rg.add(flat, laughM, laughEyes);
+  rg.add(flat, laughM, laughEyes, extra);
   const set = on => { flat.visible = !on; laughM.visible = on; laughEyes.visible = on; eyes.forEach(e => e.visible = !on); };
   set(false);
   return { eyes, set };
@@ -1421,10 +1497,8 @@ function personFace(rg) {
 
 /* ---------- 場景零件 ---------- */
 const roomG = new T.Group(); roomG.visible = false; scene.add(roomG);
-const COLL = [];
-const INTER = [];
-const ROOM = {};
-const PAL = { wood: '#b98a5c', woodD: '#8a6038' };
+const COLL = [], INTER = [], ROOM = {}, WALLS = [];
+const PAL = { wood: '#b98a5c', woodD: '#8a6038', wall: '#f3ead9', wallB: '#efe4d2' };
 const flatMat = c => new T.MeshBasicMaterial({ color: new T.Color(c) });
 function addTo(par, o, x = 0, y = 0, z = 0, ry = 0) { o.position.set(x, y, z); o.rotation.y = ry; par.add(o); return o; }
 function inkLine(pts, r = 0.05, closed = false) { return new T.Mesh(ttube(pts, r, { closed, seg: Math.max(24, pts.length * 3), N: 6, cap0: !closed, cap1: !closed }), INK); }
@@ -1454,102 +1528,225 @@ function drawCone(x, cx, cy, s, scoops) {
   scoops.forEach((c, i) => { x.lineWidth = 3 * s; x.fillStyle = c; x.beginPath(); x.arc(cx + (i % 2 ? 3 : -3) * s, cy - 12 * s - i * 20 * s, 18 * s, 0, 7); x.fill(); x.stroke(); });
 }
 const SCOOPS = ['#f6b9c9', '#bfe3d0', '#f7e48a', '#8a6038', '#ffffff', '#b9a3e3'];
+const legs4 = (g, sx, sz, h, r = 0.1, c = '#3b3d45') => { for (const a of [-sx, sx]) for (const b of [-sz, sz]) g.add(mk(ttube([new V(a, 0, b), new V(a, h, b)], r, { seg: 3, N: 6 }), c)); };
+
+/* 牆：沿 x（橫牆）或沿 z（直牆）的一段；擋在鏡頭跟人貓中間時會自動變矮 */
+const WALL_H = 11, WT = 0.35;
+function wallPiece(x0, z0, x1, z1, { h = WALL_H, color = PAL.wall, low = false } = {}) {
+  const horiz = Math.abs(z1 - z0) < 1e-6, len = horiz ? x1 - x0 : z1 - z0;
+  if (len < 0.3) return null;
+  const g = new T.Group();
+  g.add(at(mk(blob(horiz ? len / 2 + WT : WT, h / 2, horiz ? WT : len / 2 + WT, { e: 0.12 }), color), 0, h / 2, 0));
+  g.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); roomG.add(g);
+  COLL.push({ b: [Math.min(x0, x1) - WT, Math.max(x0, x1) + WT, Math.min(z0, z1) - WT, Math.max(z0, z1) + WT] });
+  const w = { g, horiz, x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1), decor: [], k: 1, low };
+  if (!low) WALLS.push(w);
+  return w;
+}
+function split(a0, a1, gaps) { const out = []; let s = a0; for (const [g0, g1] of gaps.slice().sort((p, q) => p[0] - q[0])) { out.push([s, g0]); s = g1; } out.push([s, a1]); return out; }
+function wallX(z, x0, x1, gaps = [], o) { split(x0, x1, gaps).forEach(([a, b]) => wallPiece(a, z, b, z, o)); }
+function wallZ(x, z0, z1, gaps = [], o) { split(z0, z1, gaps).forEach(([a, b]) => wallPiece(x, a, x, b, o)); }
+function decor(o, x, z) {
+  const w = WALLS.find(w => w.horiz ? Math.abs(w.z0 - z) < 1 && x >= w.x0 - 0.5 && x <= w.x1 + 0.5 : Math.abs(w.x0 - x) < 1 && z >= w.z0 - 0.5 && z <= w.z1 + 0.5);
+  if (!o.parent) roomG.add(o);
+  if (w) w.decor.push(o); return o;
+}
+function railing(x0, z0, x1, z1) {
+  wallPiece(x0, z0, x1, z1, { h: 2.6, color: '#dfe3e8', low: true });
+  roomG.add(mk(ttube([new V(x0, 2.8, z0), new V(x1, 2.8, z1)], 0.14, { seg: 4, N: 8 }), '#9aa0a8'));
+}
+
+/* 房間的範圍（用來顯示現在在哪一間） */
+const ROOMS = [
+  { id: 'mine', name: '善美的房間', r: [-34, -16, -26, -6], floor: ['#e9d6b9', '#dcc5a3'] },
+  { id: 'bath', name: '廁所', r: [-34, -16, -6, 4], floor: ['#e3eef4', '#ffffff'] },
+  { id: 'sis', name: '善妤的房間', r: [-34, -16, 4, 22], floor: ['#e3e8f0', '#d3dbe7'] },
+  { id: 'kitchen', name: '廚房', r: [-16, 10, -26, -12], floor: ['#f4efe4', '#e8dfcf'] },
+  { id: 'parents', name: '爸媽房間', r: [10, 34, -26, -2], floor: ['#eadfcf', '#dccdb8'] },
+  { id: 'living', name: '客廳', r: [-16, 10, -12, 22], floor: ['#efe2cc', '#e4d3b8'] },
+  { id: 'living', name: '客廳', r: [10, 34, -2, 22], floor: ['#efe2cc', '#e4d3b8'] },
+  { id: 'back', name: '後陽台', r: [-14, 8, -34, -26], floor: ['#d3d7dc', '#c6cbd1'] },
+  { id: 'front', name: '前陽台', r: [-12, 14, 22, 30], floor: ['#d3d7dc', '#c6cbd1'] },
+];
+function roomAt(x, z) { for (const r of ROOMS) { const [a, b, c, d] = r.r; if (x >= a && x <= b && z >= c && z <= d) return r; } return ROOMS[5]; }
 
 LODF = 0.5;
-/* ---------- 我們家：左邊善美的房間，右邊善妤的房間 ---------- */
 {
   const G = roomG;
-  // 地板、牆
-  G.add(at(mk(blob(8, 0.3, 11, { e: 0.2 }), PT.check('#e9d6b9', '#dcc5a3', 6)), -8, -0.3, 0));
-  G.add(at(mk(blob(8, 0.3, 11, { e: 0.2 }), PT.check('#e3e8f0', '#d3dbe7', 6)), 8, -0.3, 0));
-  G.add(at(mk(blob(8, 6, 0.3, { e: 0.2 }), '#f4ead8'), -8, 6, -11), at(mk(blob(8, 6, 0.3, { e: 0.2 }), '#eaeef6'), 8, 6, -11));
-  G.add(at(mk(blob(0.3, 6, 11, { e: 0.2 }), '#efe2cd'), -16, 6, 0), at(mk(blob(0.3, 6, 11, { e: 0.2 }), '#dfe4ee'), 16, 6, 0));
-  // 中間的牆，留一個門口
-  G.add(at(mk(blob(0.35, 4, 4.5, { e: 0.2 }), '#f1e6d6'), 0, 4, -6.5), at(mk(blob(0.35, 1.3, 3.5, { e: 0.2 }), '#f1e6d6'), 0, 1.3, 7.5));
-  COLL.push({ b: [-30, -15.6, -30, 30] }, { b: [15.6, 30, -30, 30] }, { b: [-30, 30, -30, -10.6] }, { b: [-30, 30, 11, 30] }, { b: [-0.45, 0.45, -12, -2] }, { b: [-0.45, 0.45, 4, 12] });
+  /* ===== 地板、牆 ===== */
+  for (const r of ROOMS) { const [a, b, c, d] = r.r; G.add(at(mk(blob((b - a) / 2, 0.3, (d - c) / 2, { e: 0.12 }), PT.check(r.floor[0], r.floor[1], 6), false), (a + b) / 2, -0.3, (c + d) / 2)); }
+  wallX(-26, -34, 34, [[-6, 0]]);                 // 最後面的外牆，留門去後陽台
+  wallX(-6, -34, -16); wallX(4, -34, -16);        // 我的房間｜廁所｜善妤的房間
+  wallX(-12, -16, 10, [[-9, 1]]);                 // 廚房｜客廳（開放式）
+  wallX(-2, 10, 34, [[13, 18]]);                  // 爸媽房間｜客廳
+  wallX(22, -34, 34, [[-10, 10]]);                // 前面的外牆，中間是落地窗
+  wallZ(-34, -26, 22); wallZ(34, -26, 22);
+  wallZ(-16, -26, 22, [[-11, -7], [-2.6, 1.6], [8, 12.4]]);
+  wallZ(10, -26, -2);
+  railing(-14, -34, 8, -34); railing(-14, -34, -14, -26); railing(8, -34, 8, -26);
+  railing(-12, 30, 14, 30); railing(-12, 22, -12, 30); railing(14, 22, 14, 30);
   // 窗戶（晚上會變暗）
   ROOM.win = new T.MeshBasicMaterial({ color: 0xcfe6f2 });
-  for (const wx of [-3.4, 4]) { G.add(at(mk(puff(sqr(2.2, 1.7, 0.3), 0.06, { e: 0.5 }), ROOM.win), wx, 7.2, -10.7)); G.add(inkLine([new V(wx, 5.5, -10.6), new V(wx, 8.9, -10.6)], 0.05), inkLine([new V(wx - 2.2, 7.2, -10.6), new V(wx + 2.2, 7.2, -10.6)], 0.05)); }
+  const win = (x, y, z, w = 2.2, h = 1.7) => { const g = new T.Group(); g.add(at(mk(puff(sqr(w, h, 0.3), 0.06, { e: 0.5 }), ROOM.win), 0, 0, 0)); g.add(inkLine([new V(0, -h, 0.1), new V(0, h, 0.1)], 0.05), inkLine([new V(-w, 0, 0.1), new V(w, 0, 0.1)], 0.05)); g.position.set(x, y, z + 0.4); G.add(g); return decor(g, x, z); };
+  win(-21.4, 7.2, -26); win(3.5, 7.6, -26, 2.4, 1.5); win(22, 7.2, -26, 2.6, 1.8);
   // 房間名牌
-  G.add(at(board([DIARY.place.rooms[0]], 4.6, 1.15, { size: 70 }), -9.5, 10.4, -10.65));
-  G.add(at(board([DIARY.place.rooms[1]], 4.6, 1.15, { size: 70, bg: '#eaeef6' }), 9.5, 10.4, -10.65));
+  const sign = (t, x, z, bg) => decor(at(board([t], 4.2, 1.05, { size: 70, bg }), x, 9.7, z + 0.42), x, z);
+  sign('善美的房間', -24, -26); sign('爸媽房間', 28, -26, '#f4ead8'); sign('善妤的房間', -25, 4, '#eaeef6');
   // 燈
-  ROOM.lamps = [new T.PointLight(0xffd99a, 0, 46), new T.PointLight(0xffd99a, 0, 46)];
-  ROOM.lamps[0].position.set(-8, 11, 2); ROOM.lamps[1].position.set(8, 11, 2); G.add(...ROOM.lamps);
+  ROOM.lamps = [[-25, -16], [-25, 13], [-3, 5], [22, 10], [-3, -19], [22, -14]].map(([x, z]) => { const l = new T.PointLight(0xffd99a, 0, 34); l.position.set(x, 10, z); G.add(l); return l; });
 
   /* ===== 善美的房間 ===== */
-  // 舒適的床
-  const bed = addTo(G, new T.Group(), -11.6, 0, -6.9);
+  const bed = addTo(G, new T.Group(), -29.6, 0, -21.9);
   bed.add(at(mk(blob(4.2, 0.7, 2.6, { e: 0.3 }), PAL.wood), 0, 0.9, 0), at(mk(blob(4.0, 0.5, 2.45, { e: 0.4 }), '#ffffff'), 0, 1.95, 0),
     at(mk(blob(2.8, 0.38, 2.55, { e: 0.5 }), PT.check('#f6b9c9', '#ffffff', 4)), 1.0, 2.45, 0), at(mk(blob(0.9, 0.38, 1.6, { e: 0.7 }), '#ffffff'), -2.9, 2.65, 0.1),
-    at(mk(blob(0.3, 2.0, 2.7, { e: 0.3 }), PAL.wood), -4.2, 2.0, 0));
-  // 床上的小抱枕
-  bed.add(at(mk(blob(0.55, 0.5, 0.5, { e: 0.8 }), '#f2c230'), -2.4, 3.2, -1.3), at(mk(blob(0.5, 0.6, 0.35, { e: 0.8 }), '#bfe3d0'), -3.0, 3.25, 1.4, 0, 0, 0.3));
-  COLL.push({ b: [-16, -7.2, -9.6, -4.1] }); ROOM.bed = bed;
-  // 床頭櫃與日記本
-  const ns = addTo(G, new T.Group(), -6.0, 0, -9.3);
-  ns.add(at(mk(blob(1.0, 1.1, 0.9, { e: 0.3 }), PAL.woodD), 0, 1.1, 0));
-  ROOM.book = at(mk(blob(0.62, 0.14, 0.46, { e: 0.5 }), '#d9453a'), 0, 2.36, 0.1, 0, 0.3, 0); ns.add(ROOM.book);
-  ns.add(at(mk(blob(0.56, 0.04, 0.4, { e: 0.5 }), '#fffaf0', false), 0.03, 2.5, 0.1, 0, 0.3, 0));
-  COLL.push({ x: -6.0, z: -9.3, r: 1.3 });
-  // 很棒的桌子 + 電腦 + 手機
-  const desk = addTo(G, new T.Group(), -2.6, 0, -9.0);
+    at(mk(blob(0.3, 2.0, 2.7, { e: 0.3 }), PAL.wood), -4.2, 2.0, 0),
+    at(mk(blob(0.55, 0.5, 0.5, { e: 0.8 }), '#f2c230'), -2.4, 3.2, -1.3), at(mk(blob(0.5, 0.6, 0.35, { e: 0.8 }), '#bfe3d0'), -3.0, 3.25, 1.4, 0, 0, 0.3));
+  COLL.push({ b: [-34, -25.2, -24.6, -19.1] });
+  const ns = addTo(G, new T.Group(), -24, 0, -24.3);
+  ns.add(at(mk(blob(1.0, 1.1, 0.9, { e: 0.3 }), PAL.woodD), 0, 1.1, 0), at(mk(blob(0.62, 0.14, 0.46, { e: 0.5 }), '#d9453a'), 0, 2.36, 0.1, 0, 0.3, 0), at(mk(blob(0.56, 0.04, 0.4, { e: 0.5 }), '#fffaf0', false), 0.03, 2.5, 0.1, 0, 0.3, 0));
+  COLL.push({ x: -24, z: -24.3, r: 1.3 });
+  const desk = addTo(G, new T.Group(), -20.6, 0, -24);
   desk.add(at(mk(blob(2.4, 0.2, 1.5, { e: 0.25 }), '#d6a874'), 0, 3.2, 0));
   for (const sx of [-2.1, 2.1]) for (const sz of [-1.2, 1.2]) desk.add(mk(ttube([new V(sx, 0, sz), new V(sx, 3.05, sz)], 0.13, { seg: 3, N: 8 }), PAL.woodD));
   desk.add(at(mk(blob(0.2, 0.7, 0.2, { e: 0.6 }), '#3b3d45'), 0, 3.9, -0.8), at(mk(blob(1.7, 1.08, 0.14, { e: 0.25 }), '#2b2c31'), 0, 5.4, -0.85));
   ROOM.pcTex = canvasTex(320, 200, () => {}); drawDesktop(false);
   desk.add(at(new T.Mesh(new T.PlaneGeometry(3.1, 1.85), new T.MeshBasicMaterial({ map: ROOM.pcTex })), 0, 5.4, -0.7));
   desk.add(at(mk(blob(1.05, 0.07, 0.36, { e: 0.4 }), '#ffffff'), -0.1, 3.47, 0.45), at(mk(blob(0.24, 0.07, 0.3, { e: 0.8 }), '#ffffff'), 1.35, 3.47, 0.5));
-  // 手機（充電時亮起來）
-  const phone = at(mk(blob(0.32, 0.06, 0.56, { e: 0.4 }), '#2b2c31'), -1.75, 3.47, 0.35, 0, 0.25, 0); desk.add(phone);
+  desk.add(at(mk(blob(0.32, 0.06, 0.56, { e: 0.4 }), '#2b2c31'), -1.75, 3.47, 0.35, 0, 0.25, 0));
   ROOM.phoneScr = new T.MeshBasicMaterial({ color: 0x1b1c21 });
-  const scr = at(new T.Mesh(new T.PlaneGeometry(0.48, 0.9), ROOM.phoneScr), -1.75, 3.54, 0.35, -PI / 2, 0, -0.25); desk.add(scr);
-  // 試過不能用的線堆在桌上；可以用的那條插在手機上
+  desk.add(at(new T.Mesh(new T.PlaneGeometry(0.48, 0.9), ROOM.phoneScr), -1.75, 3.54, 0.35, -PI / 2, 0, -0.25));
   ROOM.pile = new T.Group(); ROOM.pile.position.set(1.7, 3.45, -0.2); desk.add(ROOM.pile);
   ROOM.plug = mk(ttube([new V(-1.75, 3.5, -0.2), new V(-1.6, 3.55, -0.9), new V(-1.2, 3.45, -1.45), new V(-1.0, 2.0, -1.5), new V(-0.9, 0.3, -1.45)], 0.07, { seg: 30, N: 8 }), '#ffffff');
   desk.add(ROOM.plug);
-  COLL.push({ b: [-5.2, 0, -11, -7.3] }); ROOM.desk = desk;
-  // 椅子
-  const chair = addTo(G, new T.Group(), -2.6, 0, -5.9);
+  COLL.push({ b: [-23.2, -18, -26, -22.3] });
+  const chair = addTo(G, new T.Group(), -20.6, 0, -20.9);
   chair.add(at(mk(blob(1.25, 0.18, 1.15, { e: 0.35 }), '#3155ff'), 0, 1.95, 0), at(mk(blob(1.25, 1.0, 0.16, { e: 0.35 }), '#3155ff'), 0, 3.2, 1.1));
-  for (const sx of [-1, 1]) for (const sz of [-0.85, 0.85]) chair.add(mk(ttube([new V(sx, 0, sz), new V(sx, 1.85, sz)], 0.1, { seg: 3, N: 6 }), '#3b3d45'));
-  ROOM.chair = chair;
-  // 衣櫃（靠左牆）
-  const ward = addTo(G, new T.Group(), -14.9, 0, 3.2, PI / 2);
+  legs4(chair, 1, 0.85, 1.85);
+  const ward = addTo(G, new T.Group(), -32.9, 0, -11.8, PI / 2);
   ward.add(at(mk(blob(2.6, 4.4, 1.0, { e: 0.22 }), '#d9b98a'), 0, 4.4, 0), inkLine([new V(0, 0.6, 1.05), new V(0, 8.2, 1.05)], 0.05),
     at(mk(sph(0.15), '#e0b23f'), -0.4, 4.4, 1.1), at(mk(sph(0.15), '#e0b23f'), 0.4, 4.4, 1.1),
     at(mk(puff(sqr(0.8, 2.5, 0.25), 0.04, { e: 0.5 }), flatMat('#dff1fb')), 1.35, 5.0, 1.05));
-  COLL.push({ b: [-16, -13.7, 0.4, 6.0] }); ROOM.ward = ward;
-  // 冰淇淋海報
-  G.add(at(framed(canvasTex(256, 340, (x, w, h) => { x.fillStyle = '#fff3f6'; x.fillRect(0, 0, w, h); drawCone(x, w / 2, 210, 2.1, ['#bfe3d0', '#f6b9c9']); x.fillStyle = '#16171b'; x.font = '700 34px sans-serif'; x.textAlign = 'center'; x.fillText('ICE CREAM', w / 2, 316); }), 2.6, 3.45), -11.2, 7.6, -10.65));
-  // 地毯
-  G.add(at(disc(3.2, '#bfe3d0', 0.02, 1.4, 1), -8, 0, 2.5));
+  COLL.push({ b: [-34, -31.7, -14.6, -9] });
+  decor(at(framed(canvasTex(256, 340, (x, w, h) => { x.fillStyle = '#fff3f6'; x.fillRect(0, 0, w, h); drawCone(x, w / 2, 210, 2.1, ['#bfe3d0', '#f6b9c9']); x.fillStyle = '#16171b'; x.font = '700 34px sans-serif'; x.textAlign = 'center'; x.fillText('ICE CREAM', w / 2, 316); }), 2.6, 3.45), -29.2, 6.6, -25.6), -29.2, -26);
+  G.add(at(disc(3.2, '#bfe3d0', 0.02, 1.4, 1), -26, 0, -12.5));
+
+  /* ===== 廁所 ===== */
+  const toilet = addTo(G, new T.Group(), -32.4, 0, 1.2, PI / 2);
+  toilet.add(at(mk(blob(0.9, 0.9, 1.1, { e: 0.6 }), '#ffffff'), 0, 0.9, 0.2), at(mk(blob(0.95, 0.12, 1.15, { e: 0.6 }), '#eef3fb'), 0, 1.9, 0.2), at(mk(blob(1.0, 1.2, 0.45, { e: 0.35 }), '#ffffff'), 0, 2.6, -0.9));
+  COLL.push({ x: -32.4, z: 1.2, r: 1.4 });
+  const sink = addTo(G, new T.Group(), -24, 0, -5.0);
+  sink.add(mk(ttube([new V(0, 0, 0), new V(0, 2.8, 0)], 0.3, { seg: 3, N: 10 }), '#ffffff'), at(mk(blob(1.4, 0.35, 0.9, { e: 0.6 }), '#ffffff'), 0, 3.1, 0), at(mk(ttube([new V(0, 3.4, -0.7), new V(0, 4.0, -0.7), new V(0, 4.0, -0.2)], 0.08, { seg: 8, N: 6 }), '#b6bcc5'), 0, 0, 0));
+  decor(at(mk(puff(sqr(1.4, 1.7, 0.3), 0.05, { e: 0.5 }), flatMat('#dff1fb')), -24, 6.4, -5.55), -24, -6);
+  COLL.push({ b: [-25.6, -22.4, -6, -4] });
+  const shower = addTo(G, new T.Group(), -31.4, 0, -3.4);
+  shower.add(at(mk(blob(2.6, 0.25, 2.6, { e: 0.3 }), '#e3eef4'), 0, 0.25, 0), mk(ttube([new V(-2.6, 8.2, 2.6), new V(2.6, 8.2, 2.6)], 0.08, { seg: 4, N: 6 }), '#b6bcc5'));
+  shower.add(at(mk(blob(1.6, 3.6, 0.08, { e: 0.4 }), PT.vstripes('#bfe3d0', '#ffffff', 8)), -0.9, 4.6, 2.6));
+  COLL.push({ b: [-34, -28.8, -6, -0.8] });
+  G.add(at(mk(blob(1.2, 0.04, 0.8, { e: 0.6 }), '#f6b9c9', false), -20, 0.05, -0.5));
 
   /* ===== 善妤的房間 ===== */
-  const bedB = addTo(G, new T.Group(), 11.6, 0, -6.9);
+  const bedB = addTo(G, new T.Group(), -29.6, 0, 7.6, PI);
   bedB.add(at(mk(blob(4.2, 0.7, 2.6, { e: 0.3 }), '#9a7fc4'), 0, 0.9, 0), at(mk(blob(4.0, 0.5, 2.45, { e: 0.4 }), '#ffffff'), 0, 1.95, 0),
     at(mk(blob(2.7, 0.45, 2.3, { e: 0.6 }), PT.check('#b9a3e3', '#ffffff', 4)), -0.6, 2.5, 0.3, 0, 0.35, 0.08), at(mk(blob(0.9, 0.38, 1.6, { e: 0.7 }), '#ffffff'), 2.9, 2.65, -0.2, 0, 0.2, 0),
     at(mk(blob(0.3, 2.0, 2.7, { e: 0.3 }), '#9a7fc4'), 4.2, 2.0, 0));
-  COLL.push({ b: [7.2, 16, -9.6, -4.1] });
-  // 懶骨頭（善妤坐的地方）
-  const P0 = DIARY.people[0];
-  const bag = addTo(G, new T.Group(), P0.pos[0], 0, P0.pos[1], P0.head);
+  COLL.push({ b: [-34, -25.2, 4, 10.4] });
+  const S0 = DIARY.people[0].spots.bag;
+  const bag = addTo(G, new T.Group(), S0.pos[0], 0, S0.pos[1], S0.head);
   bag.add(at(mk(blob(2.5, 1.0, 2.4, { e: 0.85 }), '#f08a3c'), 0, 0.95, 0.1), at(mk(blob(2.2, 1.6, 1.0, { e: 0.85 }), '#f08a3c'), 0, 2.2, -1.5));
-  COLL.push({ x: P0.pos[0], z: P0.pos[1], r: 2.1 });
-  // 一大籃的線
-  const basket = addTo(G, new T.Group(), 11.3, 0, 3.6);
+  COLL.push({ x: S0.pos[0], z: S0.pos[1], r: 2.1 });
+  const basket = addTo(G, new T.Group(), -19.5, 0, 18.5);
   basket.add(mk(lathe([[0, 0], [1.1, 0], [1.35, 1.3], [1.25, 1.35], [0, 1.2]], 28), '#c9a36a'));
   ['#ffffff', '#16171b', '#3155ff', '#ffffff', '#e0566b'].forEach((c, i) => basket.add(at(mk(new T.TorusGeometry(0.5, 0.07, 6, 20), c, false), -0.5 + (i % 3) * 0.5, 1.35 + Math.floor(i / 3) * 0.12, -0.3 + (i % 2) * 0.5, PI / 2 + (i - 2) * 0.3, 0, i)));
-  COLL.push({ x: 11.3, z: 3.6, r: 1.4 });
-  // 小矮桌和零食
-  const tbl = addTo(G, new T.Group(), 13.2, 0, -1.2);
-  tbl.add(at(mk(blob(1.5, 0.15, 1.1, { e: 0.3 }), '#ffffff'), 0, 1.6, 0));
-  for (const sx of [-1.2, 1.2]) for (const sz of [-0.8, 0.8]) tbl.add(mk(ttube([new V(sx, 0, sz), new V(sx, 1.5, sz)], 0.09, { seg: 3, N: 6 }), '#3b3d45'));
+  COLL.push({ x: -19.5, z: 18.5, r: 1.4 });
+  const tbl = addTo(G, new T.Group(), -31.4, 0, 17);
+  tbl.add(at(mk(blob(1.5, 0.15, 1.1, { e: 0.3 }), '#ffffff'), 0, 1.6, 0)); legs4(tbl, 1.2, 0.8, 1.5, 0.09);
   tbl.add(at(mk(blob(0.55, 0.7, 0.2, { e: 0.6 }), '#f2c230'), -0.5, 2.4, 0, 0, 0.4, 0.15), at(mk(lathe([[0, 0], [0.3, 0], [0.3, 0.8], [0, 0.8]], 16), '#e0566b'), 0.6, 1.75, 0.2));
-  COLL.push({ b: [11.5, 14.9, -2.5, 0.1] });
-  // 牆上的紙條
-  G.add(at(board(['唉走開'], 2.8, 1.5, { size: 80, bg: '#fff7c9' }), 12.6, 6.6, -10.65, 0, 0, 0.06));
-  G.add(at(disc(3, '#f7e48a', 0.02, 1.3, 1), 7.6, 0, 2));
+  COLL.push({ b: [-33.2, -29.6, 15.6, 18.4] });
+  decor(at(board(['唉走開'], 2.8, 1.5, { size: 80, bg: '#fff7c9' }), -21.5, 6.6, 4.42, 0, 0, 0.06), -21.5, 4);
+  G.add(at(disc(3, '#f7e48a', 0.02, 1.3, 1), -23, 0, 14));
+
+  /* ===== 廚房 ===== */
+  const counter = (x0, x1) => { const g = addTo(G, new T.Group(), (x0 + x1) / 2, 0, -24.6); g.add(at(mk(blob((x1 - x0) / 2, 1.55, 1.25, { e: 0.2 }), '#ffffff'), 0, 1.55, 0), at(mk(blob((x1 - x0) / 2 + 0.1, 0.15, 1.35, { e: 0.2 }), '#9aa0a8'), 0, 3.2, 0)); COLL.push({ b: [x0, x1, -26, -23.3] }); return g; };
+  counter(-15.6, -6.6); counter(0.4, 5.6);
+  const stove = addTo(G, new T.Group(), -10, 0, -24.6);
+  stove.add(at(mk(blob(1.3, 0.1, 0.9, { e: 0.4 }), '#2b2c31'), 0, 3.42, 0), at(mk(lathe([[0, 0], [0.9, 0], [0.95, 0.9], [0, 0.9]], 24), '#c9ccd3'), 0, 3.5, 0.1));
+  stove.add(at(mk(blob(1.6, 0.6, 1.0, { e: 0.3 }), '#c9ccd3'), 0, 8.6, -0.2));
+  G.add(at(mk(blob(0.8, 0.2, 0.5, { e: 0.6 }), '#e0e3e8'), -14, 3.4, -24.6));
+  const rc = addTo(G, new T.Group(), 3, 0, -24.6); rc.add(at(mk(lathe([[0, 0], [0.75, 0], [0.8, 1.0], [0.4, 1.2], [0, 1.2]], 24), '#d9453a'), 0, 3.35, 0));
+  const fridge = addTo(G, new T.Group(), 8, 0, -24.2);
+  fridge.add(at(mk(blob(1.6, 4.0, 1.4, { e: 0.22 }), '#eef3fb'), 0, 4.0, 0), inkLine([new V(-1.5, 5.2, 1.45), new V(1.5, 5.2, 1.45)], 0.05), at(mk(blob(0.1, 0.8, 0.1, { e: 0.6 }), '#9aa0a8'), 1.1, 6.4, 1.5));
+  COLL.push({ b: [6.2, 9.8, -26, -22.6] });
+  for (const x of [-12, -8]) decor(at(mk(blob(1.8, 1.0, 0.7, { e: 0.25 }), '#d6a874'), x, 7.4, -25.4), x, -26);
+  decor(at(framed(canvasTex(200, 260, (x, w, h) => { x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.fillStyle = '#d9453a'; x.fillRect(0, 0, w, 60); x.fillStyle = '#fff'; x.font = '700 34px sans-serif'; x.textAlign = 'center'; x.fillText('十月', w / 2, 44); x.fillStyle = '#16171b'; x.font = '700 120px sans-serif'; x.fillText('13', w / 2, 200); }), 1.5, 1.95), 6, 6.2, -11.55), 6, -12);
+
+  /* ===== 後陽台 ===== */
+  const wm = addTo(G, new T.Group(), -11.4, 0, -31.6);
+  wm.add(at(mk(blob(1.5, 1.8, 1.4, { e: 0.25 }), '#ffffff'), 0, 1.8, 0), at(mk(blob(0.75, 0.75, 0.1, { e: 1 }), '#cfe6f2'), 0, 2.2, 1.42));
+  COLL.push({ b: [-13, -9.8, -33.2, -30] });
+  G.add(mk(ttube([new V(-6, 7, -32), new V(7, 7, -32)], 0.1, { seg: 6, N: 8 }), '#9aa0a8'));
+  for (const x of [-6, 7]) G.add(mk(ttube([new V(x, 0, -32), new V(x, 7, -32)], 0.1, { seg: 3, N: 6 }), '#9aa0a8'));
+  ['#f6b9c9', '#ffffff', '#3155ff', '#f2c230', '#bfe3d0'].forEach((c, i) => G.add(at(mk(blob(0.9, 1.3, 0.08, { e: 0.4 }), c), -4 + i * 2.5, 5.6, -32, 0, 0, (i % 2 ? 0.05 : -0.05))));
+  COLL.push({ b: [-6.3, 7.3, -32.4, -31.6] });
+
+  /* ===== 爸媽房間 ===== */
+  const bigBed = addTo(G, new T.Group(), 22, 0, -17.8);
+  bigBed.add(at(mk(blob(5, 0.75, 6.6, { e: 0.3 }), '#8a6038'), 0, 0.95, 0), at(mk(blob(4.8, 0.55, 6.4, { e: 0.4 }), '#ffffff'), 0, 2.0, 0),
+    at(mk(blob(4.85, 0.38, 4.2, { e: 0.5 }), PT.check('#e9b949', '#ffffff', 4)), 0, 2.5, 2.0), at(mk(blob(1.8, 0.4, 0.9, { e: 0.7 }), '#ffffff'), -2.4, 2.75, -5.3), at(mk(blob(1.8, 0.4, 0.9, { e: 0.7 }), '#ffffff'), 2.4, 2.75, -5.3),
+    at(mk(blob(5.1, 2.2, 0.35, { e: 0.3 }), '#8a6038'), 0, 2.2, -6.8));
+  COLL.push({ b: [16.6, 27.4, -26, -10.8] });
+  const ward2 = addTo(G, new T.Group(), 32.8, 0, -15, -PI / 2);
+  ward2.add(at(mk(blob(3.4, 4.4, 1.0, { e: 0.22 }), '#c9a36a'), 0, 4.4, 0), inkLine([new V(0, 0.6, 1.05), new V(0, 8.2, 1.05)], 0.05));
+  COLL.push({ b: [31.4, 34, -18.8, -11.2] });
+  const dresser = addTo(G, new T.Group(), 11.4, 0, -21, PI / 2);
+  dresser.add(at(mk(blob(1.8, 1.3, 0.9, { e: 0.25 }), '#ffffff'), 0, 1.3, 0), at(mk(puff(sqr(1.0, 1.4, 0.4), 0.04, { e: 0.5 }), flatMat('#dff1fb')), 0, 4.4, -0.7));
+  ['#f29bb4', '#bfe3d0', '#f2c230', '#b9a3e3'].forEach((c, i) => dresser.add(at(mk(lathe([[0, 0], [0.18, 0], [0.18, 0.5], [0.08, 0.6], [0, 0.6]], 12), c), -1.1 + i * 0.7, 2.6, 0.2)));
+  COLL.push({ b: [10, 12.6, -23, -19] });
+
+  /* ===== 客廳 ===== */
+  const table = addTo(G, new T.Group(), -6, 0, 4);
+  table.add(at(mk(blob(3.6, 0.18, 1.9, { e: 0.3 }), '#d6a874'), 0, 3.05, 0)); legs4(table, 3.1, 1.5, 2.9, 0.13, PAL.woodD);
+  COLL.push({ b: [-9.8, -2.2, 2.0, 6.0] });
+  const dchair = (x, z, ry) => { const c = addTo(G, new T.Group(), x, 0, z, ry); c.add(at(mk(blob(1.1, 0.16, 1.0, { e: 0.35 }), PAL.wood), 0, 1.95, 0), at(mk(blob(1.1, 1.0, 0.14, { e: 0.35 }), PAL.wood), 0, 3.15, -1.0)); legs4(c, 0.85, 0.75, 1.85, 0.09, PAL.woodD); return c; };
+  dchair(-6, 0.4, 0); dchair(-8.2, 7.6, PI); dchair(-3.8, 7.6, PI);
+  ROOM.bowl = new T.Group(); ROOM.bowl.position.set(-6, 3.2, 2.7); G.add(ROOM.bowl);
+  ROOM.bowl.add(mk(lathe([[0, 0], [0.45, 0], [0.75, 0.55], [0.7, 0.6], [0, 0.4]], 20), '#ffffff'), at(mk(blob(0.62, 0.08, 0.62, { e: 0.9 }), '#b0612e', false), 0, 0.5, 0));
+  G.add(at(disc(4.6, '#f4ead8', 0.02, 1.2, 1), -6, 0, 4));
+  // 沙發、電視
+  const sofa = addTo(G, new T.Group(), 23.6, 0, 3.8, PI / 2);
+  sofa.add(at(mk(blob(4.2, 0.7, 1.5, { e: 0.35 }), '#7fa7d9'), 0, 1.2, 0), at(mk(blob(4.2, 1.3, 0.5, { e: 0.35 }), '#7fa7d9'), 0, 2.6, -1.2), at(mk(blob(0.5, 1.0, 1.5, { e: 0.4 }), '#7fa7d9'), -4.2, 1.9, 0), at(mk(blob(0.5, 1.0, 1.5, { e: 0.4 }), '#7fa7d9'), 4.2, 1.9, 0));
+  COLL.push({ b: [21.6, 25.3, -0.8, 8.4] });
+  const ctable = addTo(G, new T.Group(), 28.2, 0, 3.8); ctable.add(at(mk(blob(1.3, 0.15, 2.2, { e: 0.3 }), '#ffffff'), 0, 1.5, 0)); legs4(ctable, 1, 1.9, 1.4, 0.09);
+  COLL.push({ b: [26.8, 29.6, 1.4, 6.2] });
+  const tv = addTo(G, new T.Group(), 33.2, 0, 3.8, -PI / 2);
+  tv.add(at(mk(blob(3.0, 0.9, 1.0, { e: 0.25 }), PAL.woodD), 0, 0.9, 0), at(mk(blob(2.8, 1.7, 0.3, { e: 0.25 }), '#2b2c31'), 0, 4.0, 0));
+  ROOM.tvTex = canvasTex(320, 190, () => {}); ROOM.tvScreen = at(new T.Mesh(new T.PlaneGeometry(5.0, 2.95), new T.MeshBasicMaterial({ color: 0x1b1c21 })), 0, 4.0, 0.32); tv.add(ROOM.tvScreen);
+  COLL.push({ b: [31.8, 34, -0.2, 7.8] });
+  G.add(at(disc(3.2, '#bfe3d0', 0.02, 1.0, 1.4), 27.5, 0, 3.8));
+  // 大門、鞋櫃
+  const door = new T.Group(); door.add(at(mk(puff(sqr(2.2, 4.1, 0.25), 0.1, { e: 0.5 }), '#8a6038'), 0, 4.1, 0), at(mk(sph(0.2), '#e0b23f'), -1.5, 4.2, 0.2));
+  addTo(G, door, 33.55, 0, 16.5, -PI / 2); decor(door, 34, 16.5);
+  const shoes = addTo(G, new T.Group(), 32.6, 0, 10.6); shoes.add(at(mk(blob(1.1, 1.6, 1.8, { e: 0.25 }), '#ffffff'), 0, 1.6, 0));
+  COLL.push({ b: [31.2, 34, 8.6, 12.6] });
+  G.add(at(mk(blob(1.6, 0.04, 2.6, { e: 0.5 }), '#c98f6a', false), 31.4, 0.06, 16.5));
+  // 盆栽
+  const plant = (x, z, s = 1) => { const g = addTo(G, new T.Group(), x, 0, z); g.add(mk(lathe([[0, 0], [0.8 * s, 0], [1.0 * s, 1.4 * s], [0, 1.4 * s]], 20), '#d0805a'), at(mk(blob(1.1 * s, 1.5 * s, 1.1 * s, { e: 0.8 }), '#7fb36f'), 0, 2.8 * s, 0)); COLL.push({ x, z, r: 1.2 * s }); return g; };
+  plant(-14.2, 20); plant(8.6, -10.4, 0.9); plant(-10.6, 28.6, 0.9); plant(12.6, 28.6, 0.9);
+  // 落地窗（可以開關）
+  ROOM.slide = new T.Group(); roomG.add(ROOM.slide);
+  const glass = new T.MeshBasicMaterial({ color: 0xd8eef8, transparent: true, opacity: 0.45, depthWrite: false });
+  const pane = () => { const g = new T.Group(); const m = new T.Mesh(new T.PlaneGeometry(10, 8.6), glass); m.position.y = 4.4; g.add(m); g.add(inkLine([new V(-5, 0.1, 0), new V(5, 0.1, 0), new V(5, 8.7, 0), new V(-5, 8.7, 0)], 0.09, true)); return g; };
+  ROOM.paneL = pane(); ROOM.paneL.position.set(-5, 0, 22); ROOM.slide.add(ROOM.paneL);
+  ROOM.paneR = pane(); ROOM.paneR.position.set(5, 0, 22.3); ROOM.slide.add(ROOM.paneR);
+  WALLS.push({ g: ROOM.slide, horiz: true, x0: -10, x1: 10, z0: 22, z1: 22, decor: [], k: 1 });
+
+  /* ===== 前陽台 ===== */
+  const bench = addTo(G, new T.Group(), 8, 0, 27);
+  bench.add(at(mk(blob(3.2, 0.2, 1.3, { e: 0.25 }), '#c9a36a'), 0, 3.0, 0)); legs4(bench, 2.8, 1, 2.85, 0.14, PAL.woodD);
+  bench.add(at(mk(blob(2.2, 0.15, 0.6, { e: 0.3 }), '#e2c48a'), -0.4, 3.35, 0.1, 0, 0.15, 0), at(mk(blob(0.12, 0.12, 0.7, { e: 0.6 }), '#3b3d45'), 2.2, 3.35, 0.3, 0, 0.5, 0), at(mk(blob(0.3, 0.25, 0.2, { e: 0.6 }), '#9aa0a8'), 2.2, 3.4, -0.2));
+  G.add(at(disc(1.6, '#e9d6a8', 0.03, 1.4, 1, 0), 8, 0, 27));
+  COLL.push({ b: [4.6, 11.4, 25.6, 28.4] });
+  const stool = addTo(G, new T.Group(), -4.4, 0, 27.6); stool.add(mk(ttube([new V(0, 0, 0), new V(0, 2, 0)], 0.5, { seg: 3, N: 12, cap1: true }), '#e0566b'), at(mk(lathe([[0, 0], [0.5, 0], [0.55, 0.2], [0, 0.2]], 16), '#9aa0a8'), 0, 2.05, 0));
+  COLL.push({ x: -4.4, z: 27.6, r: 0.9 });
 }
 LODF = 1;
 
@@ -1563,6 +1760,12 @@ function drawDesktop(charging) {
   x.textAlign = 'left'; x.font = '700 15px sans-serif'; x.fillText(charging ? '⚡ 手機充電中' : '人貓 OS', 12, h - 12);
   ROOM.pcTex.needsUpdate = true;
 }
+function drawTV() {
+  const c = ROOM.tvTex.userData.c, x = c.getContext('2d'), w = c.width, h = c.height;
+  x.fillStyle = '#2b1d3a'; x.fillRect(0, 0, w, h); x.fillStyle = '#f2c230'; x.font = '700 30px sans-serif'; x.textAlign = 'center';
+  x.fillText('第 87 集', w / 2, 60); x.fillStyle = '#ffffff'; x.font = '700 26px sans-serif'; x.fillText('她才是真千金', w / 2, 110); x.font = '500 16px sans-serif'; x.fillStyle = '#f6b9c9'; x.fillText('（媽媽最近在追的短劇）', w / 2, 150);
+  ROOM.tvTex.needsUpdate = true;
+}
 function syncProps() {
   const Q = DIARY.quests[0], s = SAVE.q[Q.id] || 0, done = s >= Q.steps.length;
   const failed = Q.steps.slice(0, s).filter(st => st.fail).length;
@@ -1571,6 +1774,8 @@ function syncProps() {
   ROOM.plug.visible = done;
   ROOM.phoneScr.color.set(done ? '#8fe08a' : '#1b1c21');
   drawDesktop(done);
+  ROOM.bowl.visible = SAVE.bowl;
+  ROOM.paneR.position.x = SAVE.slideOpen ? -4.6 : 5;
 }
 
 /* ---------- 遊戲裡的人 ---------- */
@@ -1587,35 +1792,62 @@ function lowSkin() {
   return LOWSKIN = g;
 }
 function makePerson(def) {
-  const g = new T.Group(), body = new T.Group(); g.add(body); body.scale.set(...def.scale);
+  const g = new T.Group(), tilt = new T.Group(), body = new T.Group(); g.add(tilt); tilt.add(body); body.scale.set(...def.scale);
   const rig = makeRig(); body.add(rig.bones.root);
   const mat = toon(def.color);
   lowSkin().traverse(m => { if (!m.isSkinnedMesh) return; const nm = new T.SkinnedMesh(m.geometry, m.material === inkMat ? inkMat : mat); nm.frustumCulled = false; body.add(nm); nm.bind(rig.skel, new T.Matrix4()); });
   const rg = new T.Group(); rg.position.set(0, -3.9, 0); rig.bones.chest.add(rg);
-  const face = personFace(rg);
-  // iPad：背面朝外，螢幕對著她自己
-  if (def.item) {
-    const pad = new T.Group(); pad.position.set(0, 3.75, 1.6); pad.rotation.x = -2.25;
-    pad.add(mk(blob(0.95, 0.7, 0.06, { e: 0.3 }), '#c9ccd3'), at(new T.Mesh(new T.PlaneGeometry(1.7, 1.25), flatMat('#a8d8ec')), 0, 0, -0.075, 0, PI, 0));
-    rg.add(pad);
-  }
+  const face = personFace(rg, def);
+  if (def.belly) { rg.add(at(mk(blob(1.08, 0.82, 0.5, { e: 0.9 }), mat), 0, 3.85, 0.62)); const nv = at(new T.Mesh(sph(0.07), BLACK), 0, 3.8, 1.12); nv.scale.z = 0.4; rg.add(nv); }
+  // 手上的東西
+  const props = {};
+  props.pad = new T.Group(); props.pad.position.set(0, 3.75, 1.6); props.pad.rotation.x = -2.25;
+  props.pad.add(mk(blob(0.95, 0.7, 0.06, { e: 0.3 }), '#c9ccd3'), at(new T.Mesh(new T.PlaneGeometry(1.7, 1.25), flatMat('#a8d8ec')), 0, 0, -0.075, 0, PI, 0));
+  props.phone = new T.Group(); props.phone.position.set(0, 3.7, 1.6); props.phone.rotation.x = -2.25;
+  props.phone.add(mk(blob(0.42, 0.7, 0.06, { e: 0.35 }), '#2b2c31'));
+  props.phoneLie = new T.Group(); props.phoneLie.position.set(0, 5.3, 2.5); props.phoneLie.rotation.x = 0.1;
+  props.phoneLie.add(mk(blob(0.42, 0.7, 0.06, { e: 0.35 }), '#2b2c31'));
+  Object.values(props).forEach(p => { p.visible = false; rg.add(p); });
   const skinT = new T.Group(), rigidT = new T.Group(); body.add(skinT); rg.add(rigidT);
   const st = Object.assign({ hat: null, glasses: null, tie: null, neck: null, top: null, pants: null, gloves: null, shoes: null, pet: null }, def.outfit);
   const r = buildOutfit(st, rig.skel, skinT, rigidT, null);
-  g.position.set(def.pos[0], 0, def.pos[1]); roomG.add(g);
-  const n = { def, g, body, rig, face, lift: r.lift, head: def.head, talking: false, bubbleT: 3, laughT: 0, seed: rnd() * 10, blink: 2 + rnd() * 3 };
-  NPCS.push(n); return n;
+  roomG.add(g);
+  const n = { def, g, tilt, body, rig, face, props, lift: r.lift, head: 0, talking: false, bubbleT: 2 + rnd() * 4, laughT: 0, seed: rnd() * 10, blink: 2 + rnd() * 3, spot: null, moveT: 40 + rnd() * 30, fxT: 0 };
+  NPCS.push(n); placeAt(n, (SAVE.spots && SAVE.spots[def.id]) || def.start); return n;
+}
+function placeAt(n, id) {
+  const sp = n.def.spots[id] || n.def.spots[n.def.start]; n.spot = n.def.spots[id] ? id : n.def.start;
+  n.g.position.set(sp.pos[0], 0, sp.pos[1]); n.head = sp.head;
+  n.tilt.rotation.x = sp.pose === 'lie' ? -PI / 2 : 0;
+  n.tilt.position.y = sp.pose === 'lie' ? sp.bed + 0.78 * n.def.scale[2] : 0;
+  for (const k in n.props) n.props[k].visible = sp.prop === k;
+  SAVE.spots = SAVE.spots || {}; SAVE.spots[n.def.id] = n.spot;
 }
 let npcsBuilt = false;
 function buildPeople() { if (npcsBuilt) return; npcsBuilt = true; LODF = 0.5; try { DIARY.people.forEach(makePerson); } finally { LODF = 1; } }
 const personById = id => NPCS.find(n => n.def.id === id);
 const nameToPerson = nm => NPCS.find(n => n.def.nick === nm || n.def.name === nm);
+const spotOf = n => n.def.spots[n.spot];
 function laugh(n, t = 2.2) { if (!n) return; n.laughT = t; n.face.set(true); }
+function momSmoking() { const m = personById('mom'); return !!m && m.spot === 'smoke'; }
 
 /* 主角手上的手機（滑手機、看影片時拿出來） */
 const myPhone = new T.Group(); myPhone.position.set(0, 3.7, 1.6); myPhone.rotation.x = -2.25; myPhone.visible = false;
 myPhone.add(mk(blob(0.42, 0.7, 0.06, { e: 0.35 }), '#2b2c31'));
 { const pr = new T.Group(); pr.position.set(0, -3.9, 0); pr.add(myPhone); bones.chest.add(pr); }
+
+/* ---------- 煙、蒸氣 ---------- */
+const PUFFS = [];
+for (let i = 0; i < 48; i++) { const m = new T.Mesh(sph(0.6), new T.MeshBasicMaterial({ color: 0xbfc3c9, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; roomG.add(m); PUFFS.push({ m, life: 0, max: 1, v: new V() }); }
+function puff3(p, v, color, life) { const P = PUFFS.find(q => q.life <= 0); if (!P) return; P.m.position.copy(p); P.v.copy(v); P.life = P.max = life; P.m.material.color.set(color); P.m.visible = true; }
+function updatePuffs(dt) {
+  for (const P of PUFFS) {
+    if (P.life <= 0) continue; P.life -= dt; const u = 1 - P.life / P.max;
+    P.m.position.addScaledVector(P.v, dt); P.m.position.x += Math.sin(clock * 2 + P.max * 9) * dt * 0.4;
+    P.m.scale.setScalar(0.6 + u * 2.2); P.m.material.opacity = 0.7 * Math.sin(Math.min(1, u * 1.2) * PI);
+    if (P.life <= 0) P.m.visible = false;
+  }
+}
 
 /* ---------- 遊戲介面 ---------- */
 const $ = id => document.getElementById(id);
@@ -1629,9 +1861,10 @@ const questDone = q => questStep(q) >= q.steps.length;
 function updateHUD() {
   hud.pages.textContent = SAVE.diary.length;
   hud.inv.innerHTML = SAVE.hold ? `<span>${esc(SAVE.hold)}</span>` : '';
-  hud.quests.innerHTML = `<h3>今天要做的事</h3>` + DIARY.quests.map(q => {
-    const s = questStep(q), d = questDone(q);
-    return `<p class="q q${d ? 2 : s ? 1 : 0}"><b>${d ? '✓' : s ? '…' : '○'}</b> ${esc(q.title)}${d ? '' : `<small>${esc(q.steps[s].hint)}</small>`}</p>`;
+  hud.quests.innerHTML = `<h3>今天要做的事 <small>第 ${SAVE.day} 天</small></h3>` + DIARY.quests.map(q => {
+    const s = questStep(q), d = questDone(q), st = q.steps[s];
+    const hint = d ? '' : (st.cond && !st.cond() && st.wait) ? st.wait : st.hint;
+    return `<p class="q q${d ? 2 : s ? 1 : 0}"><b>${d ? '✓' : s ? '…' : '○'}</b> ${esc(q.title)}${d ? (q.repeat ? '<small>明天可能又會發生</small>' : '') : `<small>${esc(hint)}</small>`}</p>`;
   }).join('');
 }
 let toastT = 0;
@@ -1668,7 +1901,7 @@ function sfx(kind, freq) {
   try {
     AC = AC || new (window.AudioContext || window.webkitAudioContext)();
     const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
-    const set = { blip: [660, 0.05, 'square', 0.03], pick: [880, 0.18, 'triangle', 0.12], note: [freq || 440, 0.5, 'triangle', 0.15], bad: [180, 0.25, 'sawtooth', 0.06], yay: [990, 0.3, 'triangle', 0.12] }[kind];
+    const set = { blip: [660, 0.05, 'square', 0.03], pick: [880, 0.18, 'triangle', 0.12], note: [freq || 440, 0.5, 'triangle', 0.15], bad: [180, 0.25, 'sawtooth', 0.06], yay: [990, 0.3, 'triangle', 0.12], knock: [140, 0.08, 'square', 0.05] }[kind];
     o.type = set[2]; o.frequency.setValueAtTime(set[0], t); if (kind === 'pick' || kind === 'yay') o.frequency.exponentialRampToValueAtTime(set[0] * 1.6, t + set[1]);
     g.gain.setValueAtTime(set[3], t); g.gain.exponentialRampToValueAtTime(0.0001, t + set[1]);
     o.connect(g).connect(AC.destination); o.start(t); o.stop(t + set[1] + 0.02);
@@ -1684,67 +1917,149 @@ function bubbleFor(key) { let el = BUBBLES.get(key); if (!el) { el = document.cr
 function meSay(text, t = 2.6) { const el = bubbleFor('me'); el.textContent = text; el.dataset.t = t; }
 const myPhrase = () => DIARY.me.phrases[Math.floor(Math.random() * DIARY.me.phrases.length)];
 
-/* ---------- 跟人說話、任務 ---------- */
+/* ---------- 任務 ---------- */
 function activeStep(at) {
-  for (const q of DIARY.quests) { if (questDone(q)) continue; const s = q.steps[questStep(q)]; if (s.at === at) return { q, s }; }
+  for (const q of DIARY.quests) { if (questDone(q)) continue; const s = q.steps[questStep(q)]; if (s.at === at && (!s.cond || s.cond())) return { q, s }; }
   return null;
 }
+function advance(q, s) {
+  SAVE.q[q.id] = questStep(q) + 1;
+  if (s.give) { SAVE.hold = s.give; sfx('pick'); toast('拿到了：' + s.give); }
+  if (s.fail) { SAVE.hold = null; sfx('bad'); emote('💢', GAME.pos.clone().add(new V(0, 9.5, 0))); }
+  if (s.after) s.after();
+  if (s.done) completeQuest(q);
+  saveGame(); updateHUD(); syncProps();
+}
 function runStep({ q, s }, npc) {
-  dialog(DIARY.me.nick, s.lines, { npc, onEnd: () => {
-    SAVE.q[q.id] = questStep(q) + 1;
-    if (s.give) { SAVE.hold = s.give; sfx('pick'); toast('拿到了：' + s.give); }
-    if (s.fail) { SAVE.hold = null; sfx('bad'); emote('💢', GAME.pos.clone().add(new V(0, 9.5, 0))); }
-    if (s.done) completeQuest(q);
-    saveGame(); updateHUD(); syncProps();
-  } });
+  if (s.run) { RUNS[s.run](() => advance(q, s)); return; }
+  dialog(DIARY.me.nick, typeof s.lines === 'function' ? s.lines() : s.lines, { npc, onEnd: () => advance(q, s) });
 }
 function completeQuest(q) {
   SAVE.hold = null; jingle();
   emote('★', GAME.pos.clone().add(new V(0, 9.5, 0)));
-  if (q.event && !SAVE.diary.includes(q.event)) SAVE.diary.push(q.event);
+  const first = q.event && !SAVE.diary.includes(q.event);
+  if (first) SAVE.diary.push(q.event);
+  if (q.id === 'noodle') { SAVE.bowl = true; const d = personById('dad'); if (d) d.moveT = 0; }
   const ev = DIARY.events.find(e => e.id === q.event);
-  toast(`日記多了一頁：${ev ? ev.title : q.title}`);
-  setTimeout(() => openDiary('ev:' + q.event), 1400);
+  toast(first ? `日記多了一頁：${ev ? ev.title : q.title}` : `完成：${q.title}`);
+  if (first) setTimeout(() => openDiary('ev:' + q.event), 1400);
 }
+/* 出門買麵線：畫面暗下來，在巷口的麵線攤點餐 */
+const RUNS = {
+  stall(next) {
+    GAME.lock = true; hud.fade.dataset.label = '巷口的麵線攤'; hud.fade.classList.add('on', 'scene');
+    setTimeout(() => {
+      GAME.lock = false;
+      dialog('老闆', [['老闆', '要什麼？']], { choices: [
+        { t: '大腸麵線，不要香菜', fn: () => back(false) },
+        { t: '大腸麵線，香菜多一點', fn: () => back(true) },
+      ] });
+    }, 800);
+    const back = cil => {
+      SAVE.cil = cil;
+      dialog('老闆', [['老闆', cil ? '香菜多一點，好喔' : '不要香菜，好喔'], ['老闆', '一碗六十五'], [null, '拎著熱騰騰的麵線回家。']], { onEnd: () => {
+        hud.fade.classList.remove('on', 'scene'); GAME.pos.set(30.6, 0, 16.5); GAME.head = -PI / 2; GAME.snap = true;
+        next(); SAVE.hold = '一碗大腸麵線'; toast('買到麵線了，拿去給爸爸'); updateHUD(); saveGame();
+      } });
+    };
+  },
+};
+
+/* ---------- 跟人說話 ---------- */
 function talkTo(n) {
   const d = n.def; n.talking = true;
   if (!SAVE.met[d.id]) { SAVE.met[d.id] = true; saveGame(); }
   const st = activeStep(d.id); if (st) { runStep(st, n); return; }
+  const sp = spotOf(n), lines = sp.chatter || d.chatter || [d.opener];
+  const pickL = () => lines[Math.floor(Math.random() * lines.length)];
+  if (d.id === 'sis') {
+    dialog(d.nick, [d.opener], { npc: n, choices: [
+      { t: '沒事', fn: () => dialog(d.nick, ['唉走開'], { npc: n }) },
+      { t: '你在用 iPad 喔', fn: () => dialog(d.nick, [[null, '善妤沒有抬頭，繼續盯著 iPad。'], [d.nick, '哈哈哈哈哈', 'laugh']], { npc: n }) },
+      { t: '（說口頭禪）', fn: () => dialog(d.nick, [[DIARY.me.nick, myPhrase()], [d.nick, d.reply, 'laugh']], { npc: n }) },
+    ] });
+    return;
+  }
+  const extra = {
+    dad: { eat: [[null, '爸爸一邊吃一邊看手機。'], ['爸爸', '你吃了沒']], bed: [[null, '爸爸躺在床上滑手機，只穿一條內褲。'], ['爸爸', '幹嘛，我在休息']], wood: [[null, '爸爸在做一張小板凳。'], ['爸爸', '等一下做好給你坐']] },
+    mom: { cook: [['媽媽', '快好了，去叫妹妹出來吃飯']], laundry: [['媽媽', '你的衣服我幫你曬了喔']], smoke: [['媽媽', '我在抽菸，你不要過來啦']], drama: [['媽媽', '你看這個，那個總裁又被騙了'], [null, '媽媽把手機轉過來給你看。']] },
+  }[d.id] || {};
   dialog(d.nick, [d.opener], { npc: n, choices: [
-    { t: '沒事', fn: () => dialog(d.nick, [d.chatter.find(c => !/哈哈/.test(c)) || d.chatter[0]], { npc: n }) },
-    { t: `你在${d.item ? '用 ' + d.item : '幹嘛'}喔`, fn: () => dialog(d.nick, [[null, `${d.nick}沒有抬頭，繼續盯著${d.item || '前面'}。`], [d.nick, d.chatter[0], 'laugh']], { npc: n }) },
-    { t: '（說口頭禪）', fn: () => { const p = myPhrase(); dialog(d.nick, [[DIARY.me.nick, p], [d.nick, d.chatter[0], 'laugh']], { npc: n }); } },
+    { t: '聊天', fn: () => dialog(d.nick, (extra[n.spot] || []).concat([[d.nick, pickL()]]), { npc: n }) },
+    { t: '（說口頭禪）', fn: () => dialog(d.nick, [[DIARY.me.nick, myPhrase()], [d.nick, d.reply]], { npc: n }) },
+    { t: '沒事', fn: () => {} },
   ] });
 }
 
 /* ---------- 可以互動的東西 ---------- */
 function addInter(o) { INTER.push(o); return o; }
-const deskStep = () => activeStep('desk');
-addInter({ pos: () => new V(-2.6, 0, -4.2), r: 3.2, label: () => { const s = deskStep(); return s ? s.s.label : '玩電腦'; }, fn: () => { const s = deskStep(); if (s) runStep(s); else { sitAt(new V(-2.6, 0, -5.9), PI, 0.75); openPC(); } } });
-addInter({ pos: () => new V(-11, 0, -2.6), r: 3.6, label: '床', fn: () => dialog('床', ['軟軟的，好想躺上去。'], { choices: [
+function qInter(id, pos, r, label, fn) {
+  addInter({ id, pos: () => pos, r, label: () => { const s = activeStep(id); return s ? s.s.label : (typeof label === 'function' ? label() : label); }, fn: () => { const s = activeStep(id); if (s) runStep(s); else fn(); } });
+}
+// 我的房間
+qInter('desk', new V(-20.6, 0, -19.2), 3.2, '玩電腦', () => { sitAt(new V(-20.6, 0, -20.9), PI, 0.75); openPC(); });
+addInter({ pos: () => new V(-29, 0, -17.6), r: 3.6, label: '床', fn: () => dialog('床', ['軟軟的，好想躺上去。'], { choices: [
   { t: '睡覺', fn: sleep }, { t: '滑手機', fn: () => usePhone('scroll') }, { t: '看影片', fn: () => usePhone('video') }, { t: '算了', fn: () => {} },
 ] }) });
-addInter({ pos: () => new V(-6.0, 0, -7.2), r: 2.4, label: '看日記', fn: () => openDiary() });
-addInter({ pos: () => new V(-12.2, 0, 3.2), r: 3.2, label: '衣櫃', fn: () => dialog('衣櫃', ['衣櫃門上有一面鏡子。'], { choices: [
+addInter({ pos: () => new V(-24, 0, -22.2), r: 2.4, label: '看日記', fn: () => openDiary() });
+addInter({ pos: () => new V(-30.2, 0, -11.8), r: 3.2, label: '衣櫃', fn: () => dialog('衣櫃', ['衣櫃門上有一面鏡子。'], { choices: [
   { t: '換衣服', fn: () => exitGame(true) }, { t: '照鏡子', fn: lookMirror }, { t: '算了', fn: () => {} },
 ] }) });
-addInter({ pos: () => new V(11.3, 0, 5.6), r: 2.6, label: '看那籃線', fn: () => dialog('一籃線', [[null, '一整籃的線，纏在一起。'], [DIARY.me.nick, '太白癡了']]) });
+// 廁所
+addInter({ pos: () => new V(-29.6, 0, 1.2), r: 2.8, label: '上廁所', fn: () => fadeDo(() => {}, '（沖水聲）') });
+addInter({ pos: () => new V(-24, 0, -2.6), r: 2.6, label: '洗手台', fn: () => dialog('洗手台', ['鏡子有點起霧。'], { choices: [
+  { t: '洗手', fn: () => { sfx('pick'); emote('✨', GAME.pos.clone().add(new V(0, 9, 0))); } }, { t: '照鏡子', fn: lookMirror }, { t: '算了', fn: () => {} },
+] }) });
+// 善妤的房間
+addInter({ pos: () => new V(-19.5, 0, 16), r: 2.6, label: '看那籃線', fn: () => dialog('一籃線', [[null, '一整籃的線，纏在一起。'], [DIARY.me.nick, '太白癡了']]) });
+// 廚房
+addInter({ pos: () => new V(7.4, 0, -20.8), r: 3, label: '冰箱', fn: () => dialog('冰箱', ['冰箱裡涼涼的。'], { choices: [
+  { t: '吃冰淇淋', fn: () => { sfx('yay'); emote('♥', GAME.pos.clone().add(new V(0, 9, 0))); meSay(DIARY.me.phrases[2]); toast('好冰！頭有點痛'); } },
+  { t: '喝麥茶', fn: () => { sfx('pick'); toast('咕嚕咕嚕。'); } }, { t: '關上', fn: () => {} },
+] }) });
+addInter({ pos: () => new V(-10, 0, -20.8), r: 2.6, cond: () => personById('mom') && personById('mom').spot !== 'cook', label: '看看鍋子', fn: () => dialog('鍋子', ['鍋子裡是媽媽煮好的菜，還熱熱的。'], { choices: [{ t: '偷吃一口', fn: () => { emote('♥', GAME.pos.clone().add(new V(0, 9, 0))); toast('好吃！'); } }, { t: '算了', fn: () => {} }] }) });
+addInter({ pos: () => new V(3, 0, -21.2), r: 2.4, label: '電鍋', fn: () => dialog('電鍋', ['裡面有飯，保溫中。']) });
+// 後陽台
+addInter({ pos: () => new V(-11.4, 0, -28.6), r: 2.8, label: '洗衣機', fn: () => dialog('洗衣機', ['轟轟轟……正在脫水。']) });
+addInter({ pos: () => new V(4, 0, -29.6), r: 2.6, cond: () => personById('mom') && personById('mom').spot !== 'laundry', label: '收衣服', fn: () => { sfx('pick'); toast('把乾掉的衣服收進來了'); } });
+// 爸媽房間
+addInter({ pos: () => new V(12.6, 0, -18), r: 2.6, label: '梳妝台', fn: () => dialog('梳妝台', ['媽媽的保養品排得整整齊齊。']) });
+addInter({ pos: () => new V(28.6, 0, -9.4), r: 3, cond: () => personById('dad') && personById('dad').spot !== 'bed', label: '爸媽的床', fn: () => dialog('爸媽的床', ['床上有爸爸的手機充電線，還有一包吃到一半的餅乾。']) });
+// 客廳
+addInter({ pos: () => new V(30, 0, 3.8), r: 2.8, label: () => ROOM.tvOn ? '關電視' : '開電視', fn: () => { ROOM.tvOn = !ROOM.tvOn; if (ROOM.tvOn) { drawTV(); ROOM.tvScreen.material = new T.MeshBasicMaterial({ map: ROOM.tvTex }); } else ROOM.tvScreen.material = new T.MeshBasicMaterial({ color: 0x1b1c21 }); sfx('blip'); } });
+addInter({ pos: () => new V(26.6, 0, 7.4), r: 2.2, cond: () => !(personById('mom') && personById('mom').spot === 'drama'), label: '坐沙發', fn: () => sitAt(new V(24.4, 0, 6.6), PI / 2, 0.85) });
+qInter('door', new V(31, 0, 16.5), 3, '大門', () => dialog('大門', ['現在不想出門。'], { choices: [{ t: '還是待在家好了', fn: () => {} }] }));
+qInter('slide', new V(5, 0, 19.6), 3.6, () => SAVE.slideOpen ? '關落地窗' : '開落地窗', () => { SAVE.slideOpen = !SAVE.slideOpen; syncProps(); sfx('blip'); saveGame(); updateHUD(); });
+qInter('slide', new V(5, 0, 24.8), 3.2, () => SAVE.slideOpen ? '關落地窗' : '開落地窗', () => { SAVE.slideOpen = !SAVE.slideOpen; syncProps(); sfx('blip'); saveGame(); updateHUD(); });
+addInter({ pos: () => new V(-6, 0, 9.8), r: 2.6, cond: () => SAVE.bowl, label: '看看麵線', fn: () => dialog('麵線', [SAVE.cil ? '香菜被挑到碗邊了。' : '大腸麵線，不要香菜。爸爸吃得很香。']) });
+// 前陽台
+addInter({ pos: () => new V(8, 0, 24.4), r: 2.6, cond: () => personById('dad') && personById('dad').spot !== 'wood', label: '工作檯', fn: () => dialog('工作檯', ['爸爸做到一半的小板凳，旁邊都是木屑。']) });
 
 function applyLight() {
   const night = SAVE.night && GAME.on;
   scene.background = GAME.on ? new T.Color(night ? '#2b2a35' : '#f6efe2') : null;
   LIGHTS.a.intensity = night ? 0.5 : 0.84; LIGHTS.a.color.set(night ? '#aab4e8' : '#ffffff');
   LIGHTS.d.intensity = night ? 0.08 : 0.2;
-  ROOM.lamps.forEach(l => l.intensity = night ? 0.7 : 0);
+  ROOM.lamps.forEach(l => l.intensity = night ? 0.55 : 0);
   ROOM.win.color.set(night ? '#2f3a66' : '#cfe6f2');
   hud.root.classList.toggle('night', night);
 }
 function fadeDo(fn, msg) { hud.fade.classList.add('on'); GAME.lock = true; setTimeout(() => { fn(); hud.fade.classList.remove('on'); GAME.lock = false; if (msg) toast(msg); }, 650); }
-function sleep() { fadeDo(() => { SAVE.night = !SAVE.night; GAME.pos.set(-11, 0, -2.6); GAME.head = 0; applyLight(); saveGame(); }, SAVE.night ? '早安～睡得好飽' : '晚安～現在是晚上了'); }
+function newDay() {
+  SAVE.day += 1;
+  for (const q of DIARY.quests) if (q.repeat && questDone(q)) SAVE.q[q.id] = 0;
+  SAVE.bowl = false; SAVE.slideOpen = true; SAVE.cil = false;
+  const m = personById('mom'), d = personById('dad'); if (m) placeAt(m, 'smoke'); if (d) placeAt(d, 'eat');
+  syncProps(); updateHUD();
+}
+function sleep() {
+  const wake = SAVE.night;
+  fadeDo(() => { SAVE.night = !SAVE.night; if (wake) newDay(); GAME.pos.set(-29, 0, -17.6); GAME.head = 0; applyLight(); saveGame(); }, wake ? `早安～第 ${SAVE.day + 1} 天` : '晚安～現在是晚上了');
+}
 function sitAt(p, head, lower) { if (GAME.mirror) endMirror(); GAME.sitting = { lower }; GAME.pos.copy(p); GAME.head = head; GAME.vel.set(0, 0, 0); }
 function standUp() { GAME.sitting = null; GAME.phone = null; myPhone.visible = false; }
 function usePhone(kind) {
-  sitAt(new V(-10.6, 0, -3.7), 0, 0.45); myPhone.visible = true;
+  sitAt(new V(-28.6, 0, -18.7), 0, 0.45); myPhone.visible = true;
   GAME.phone = { kind, t: 0, next: 1.4 };
   toast(kind === 'video' ? '在看影片…（按互動站起來）' : '在滑手機…（按互動站起來）');
 }
@@ -1762,7 +2077,7 @@ const DIA = { open: false, cur: 'me' };
 function diaryPages() {
   const pages = [{ key: 'me', title: '關於我', tag: '我' }];
   DIARY.people.forEach(p => pages.push({ key: 'p:' + p.id, title: p.name, tag: p.rel, locked: !SAVE.met[p.id] }));
-  DIARY.events.forEach(e => pages.push({ key: 'ev:' + e.id, title: e.title, tag: e.date.slice(5).replace('-', '/'), locked: !SAVE.diary.includes(e.id) }));
+  DIARY.events.forEach(e => pages.push({ key: 'ev:' + e.id, title: e.title, tag: e.date ? e.date.slice(5).replace('-', '/') : (e.tag || ''), locked: !SAVE.diary.includes(e.id) }));
   return pages;
 }
 function renderDiary() {
@@ -1777,10 +2092,11 @@ function renderDiary() {
     html = `<h3>？？？</h3><p class="d-lead">${pg.key.startsWith('p:') ? '還沒跟這個人說過話。' : '這一頁還沒寫。完成「' + esc((DIARY.quests.find(q => 'ev:' + q.event === pg.key) || {}).title || '任務') + '」就會寫進來。'}</p>`;
   } else if (pg.key.startsWith('p:')) {
     const p = DIARY.people.find(x => 'p:' + x.id === pg.key);
-    html = `<h3>${esc(p.name)} <small>${esc(p.rel)}</small></h3><dl>${row('樣子', esc(p.look))}${row('個性', esc(p.traits))}${row('常說', p.chatter.filter((c, i, a) => a.indexOf(c) === i).concat(p.opener).map(c => `<span class="d-chip">${esc(c)}</span>`).join(''))}${row('手上總是', esc(p.item))}${row('一起的回憶', esc(p.memory))}</dl>`;
+    const says = [p.opener].concat(p.chatter || [], ...Object.values(p.spots).map(s => s.chatter || [])).filter((c, i, a) => c && a.indexOf(c) === i && !/^（/.test(c)).slice(0, 8);
+    html = `<h3>${esc(p.name)} <small>${esc(p.rel)}</small></h3><dl>${(p.info || []).map(([k, v]) => row(k, esc(v))).join('')}${row('常說', says.map(c => `<span class="d-chip">${esc(c)}</span>`).join(''))}</dl>`;
   } else {
     const e = DIARY.events.find(x => 'ev:' + x.id === pg.key);
-    html = `<p class="d-date">${esc(e.date.replace(/-/g, '.'))}</p><h3>${esc(e.title)}</h3><dl>${row('地點', esc(e.place))}${row('有誰', esc(e.who.join('、')))}</dl><p class="d-text">${esc(e.text)}</p><p class="d-mood">心情：${esc(e.mood)}</p>`;
+    html = `<p class="d-date">${esc(e.date ? e.date.replace(/-/g, '.') : e.tag)}</p><h3>${esc(e.title)}</h3><dl>${row('地點', esc(e.place))}${row('有誰', esc(e.who.join('、')))}</dl><p class="d-text">${esc(e.text)}</p><p class="d-mood">心情：${esc(e.mood)}</p>`;
   }
   hud.dpage.innerHTML = html;
 }
@@ -1878,7 +2194,7 @@ function action() {
 }
 hud.act.addEventListener('click', action);
 hud.prompt.addEventListener('click', action);
-function toggleQuests() { hud.quests.hidden = !hud.quests.hidden; }
+function toggleQuests() { updateHUD(); hud.quests.hidden = !hud.quests.hidden; }
 $('g-qbtn').onclick = toggleQuests;
 $('g-dbtn').onclick = () => DIA.open ? closeDiary() : openDiary();
 $('g-exit').onclick = () => exitGame(false);
@@ -1892,9 +2208,9 @@ function joyMove(e) { const r = hud.joy.getBoundingClientRect(), cx = r.left + r
 // 拖曳轉鏡頭、滾輪縮放
 let camDrag = null;
 cv.addEventListener('pointerdown', e => { if (GAME.on) camDrag = { x: e.clientX, y: e.clientY }; });
-addEventListener('pointermove', e => { if (!camDrag || !GAME.on) return; GAME.camYaw = clamp(GAME.camYaw - (e.clientX - camDrag.x) * 0.006, -1.2, 1.2); GAME.camPitch = clamp(GAME.camPitch + (e.clientY - camDrag.y) * 0.004, 0.15, 1.1); camDrag.x = e.clientX; camDrag.y = e.clientY; });
+addEventListener('pointermove', e => { if (!camDrag || !GAME.on) return; GAME.camYaw = clamp(GAME.camYaw - (e.clientX - camDrag.x) * 0.006, -1.2, 1.2); GAME.camPitch = clamp(GAME.camPitch + (e.clientY - camDrag.y) * 0.004, 0.15, 1.2); camDrag.x = e.clientX; camDrag.y = e.clientY; });
 addEventListener('pointerup', () => { camDrag = null; });
-cv.addEventListener('wheel', e => { if (!GAME.on) return; e.preventDefault(); GAME.camDist = clamp(GAME.camDist * (1 + Math.sign(e.deltaY) * 0.08), 12, 40); }, { passive: false });
+cv.addEventListener('wheel', e => { if (!GAME.on) return; e.preventDefault(); GAME.camDist = clamp(GAME.camDist * (1 + Math.sign(e.deltaY) * 0.08), 12, 46); }, { passive: false });
 
 /* ---------- 進出遊戲 ---------- */
 function enterGame() {
@@ -1904,12 +2220,11 @@ function enterGame() {
   setTimeout(resize, 30);
   if (!SAVE.seenIntro) {
     SAVE.seenIntro = true; saveGame();
-    const sis = DIARY.people[0];
     setTimeout(() => dialog('人貓日記', [
       `這是${DIARY.me.name}的日記。生活裡發生的事，都會寫在這裡。`,
-      `這裡是${DIARY.place.name}：左邊是我的房間，右邊是${sis.nick}的房間。`,
+      `這裡是${DIARY.place.name}：我的房間、善妤的房間、爸媽房間、客廳、廚房、廁所，還有前後陽台。`,
       '用 WASD 或方向鍵走路（手機用左下角的搖桿），E 或空白鍵互動，J 打開日記，Q 看今天要做的事。',
-      `今天需要一條 type C 線……去隔壁跟${sis.nick}借吧。`,
+      '好像有一股煙味從客廳飄過來……爸爸也在餐桌那邊等著什麼。',
     ]), 500);
   }
 }
@@ -1918,7 +2233,7 @@ function exitGame(fromWardrobe) {
   standUp(); if (GAME.mirror) endMirror(); if (PC.on) closePC(); closeDiary();
   if (DLG.open) closeDialog(true);
   root.position.set(0, 0, 0); applyLight(); BUBBLES.forEach(b => b.remove()); BUBBLES.clear();
-  if (fromWardrobe) { GAME.pos.set(-12.2, 0, 3.2); GAME.head = -PI / 2; }
+  if (fromWardrobe) { GAME.pos.set(-30.2, 0, -11.8); GAME.head = -PI / 2; }
   current = 'top'; renderUI();
   setTimeout(resize, 30);
 }
@@ -1935,6 +2250,13 @@ function collide(p, r, list) {
 }
 function project(p) { _v.copy(p).project(gameCam); const r = cv.getBoundingClientRect(); return [(_v.x + 1) / 2 * r.width, (1 - _v.y) / 2 * r.height, _v.z < 1]; }
 const turnTo = (a, b, k) => { let d = b - a; d = Math.atan2(Math.sin(d), Math.cos(d)); return a + d * k; };
+/* 線段相交：用來判斷牆有沒有擋住鏡頭 */
+function segHit(ax, az, bx, bz, w) {
+  const pad = 1.2;
+  if (w.horiz) { const z = w.z0; if ((az - z) * (bz - z) > 0) return false; const t = (z - az) / (bz - az || 1e-6), x = ax + (bx - ax) * t; return x > w.x0 - pad && x < w.x1 + pad; }
+  const x = w.x0; if ((ax - x) * (bx - x) > 0) return false; const t = (x - ax) / (bx - ax || 1e-6), z = az + (bz - az) * t; return z > w.z0 - pad && z < w.z1 + pad;
+}
+let smellShown = false;
 function gameUpdate(dt) {
   // 移動
   let ix = (KEYS.d || KEYS.arrowright ? 1 : 0) - (KEYS.a || KEYS.arrowleft ? 1 : 0) + JOY.x;
@@ -1943,7 +2265,7 @@ function gameUpdate(dt) {
   const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
   if (busy) ix = iz = 0;
   if ((ix || iz) && GAME.sitting) standUp();
-  const run = KEYS.shift ? 1.6 : 1, sp = 8.5 * run;
+  const run = KEYS.shift ? 1.6 : 1, sp = 9 * run;
   const cy = Math.cos(GAME.camYaw), sy = Math.sin(GAME.camYaw);
   const want = new V(ix * cy + iz * sy, 0, -ix * sy + iz * cy).multiplyScalar(sp);
   GAME.vel.lerp(want, 1 - Math.exp(-dt * 10));
@@ -1952,7 +2274,8 @@ function gameUpdate(dt) {
   if (!GAME.sitting) {
     GAME.pos.addScaledVector(GAME.vel, dt);
     collide(GAME.pos, 1.3, COLL);
-    for (const n of NPCS) { const dx = GAME.pos.x - n.g.position.x, dz = GAME.pos.z - n.g.position.z, d = Math.hypot(dx, dz), rr = 3.3; if (d < rr && d > 1e-4) { GAME.pos.x = n.g.position.x + dx / d * rr; GAME.pos.z = n.g.position.z + dz / d * rr; } }
+    collide(GAME.pos, 1.3, [{ b: SAVE.slideOpen ? [-10.4, 0, 21.6, 22.6] : [-10.4, 10.4, 21.6, 22.6] }]);
+    for (const n of NPCS) { const s = spotOf(n); if (s.pose === 'lie' || s.pose === 'sit') continue; const dx = GAME.pos.x - n.g.position.x, dz = GAME.pos.z - n.g.position.z, d = Math.hypot(dx, dz), rr = 2.6; if (d < rr && d > 1e-4) { GAME.pos.x = n.g.position.x + dx / d * rr; GAME.pos.z = n.g.position.z + dz / d * rr; } }
   }
   if (GAME.moving) GAME.head = turnTo(GAME.head, Math.atan2(GAME.vel.x, GAME.vel.z), Math.min(1, dt * 12));
   if (GAME.mirror) GAME.head = turnTo(GAME.head, 0, Math.min(1, dt * 8));
@@ -1967,24 +2290,35 @@ function gameUpdate(dt) {
     GAME.mirror.t += dt; if (GAME.mirror.t > 4.5) endMirror();
     tgt = GAME.pos.clone().add(new V(0, 4.6, 0)); camP = GAME.pos.clone().add(new V(0, 5.2, 12.5));
   } else {
-    tgt = GAME.pos.clone().add(new V(0, 4.5, 0)); const cd = GAME.camDist * (gameCam.aspect < 1 ? 1.25 / Math.max(0.5, gameCam.aspect) : 1);
+    tgt = GAME.pos.clone().add(new V(0, 4.5, 0)); const cd = GAME.camDist * (gameCam.aspect < 1 ? 1.2 / Math.max(0.5, gameCam.aspect) : 1);
     camP = new V(tgt.x + Math.sin(GAME.camYaw) * Math.cos(GAME.camPitch) * cd, tgt.y + Math.sin(GAME.camPitch) * cd, tgt.z + Math.cos(GAME.camYaw) * Math.cos(GAME.camPitch) * cd);
-    camP.x = clamp(camP.x, -15, 15); camP.z = Math.max(camP.z, -4);
   }
+  const snapped = GAME.snap;
   if (GAME.snap) { gameCam.position.copy(camP); GAME.snap = false; } else gameCam.position.lerp(camP, 1 - Math.exp(-dt * 6));
   gameCam.lookAt(tgt);
+  // 擋住鏡頭的牆變矮
+  const cx = gameCam.position.x, cz = gameCam.position.z, px = GAME.pos.x, pz = GAME.pos.z;
+  for (const w of WALLS) {
+    let low = segHit(cx, cz, px, pz + 0.6, w) || segHit(cx, cz, px - 2.5, pz + 0.6, w) || segHit(cx, cz, px + 2.5, pz + 0.6, w);
+    if (w.horiz && w.z0 > pz + 0.5 && w.z0 < cz && w.x1 > px - 14 && w.x0 < px + 14) low = true;
+    const t = low ? 0.1 : 1; w.k = snapped ? t : w.k + (t - w.k) * Math.min(1, dt * 8); w.g.scale.y = w.k;
+    const show = w.k > 0.6; for (const d of w.decor) d.visible = show;
+  }
   // 人
   for (const n of NPCS) updatePerson(n, dt);
+  updatePuffs(dt);
   // 附近可以互動的東西
   let best = null, bd = 1e9;
   if (!busy && !GAME.sitting) {
     for (const it of INTER) { if (it.cond && !it.cond()) continue; const p = it.pos(), d = Math.hypot(p.x - GAME.pos.x, p.z - GAME.pos.z); if (d < it.r && d < bd) { bd = d; best = it; } }
-    for (const n of NPCS) { const d = Math.hypot(n.g.position.x - GAME.pos.x, n.g.position.z - GAME.pos.z); if (d < 5.6 && d < bd) { bd = d; const st = activeStep(n.def.id); best = { npc: n, label: st ? st.s.label : `和${n.def.nick}說話` }; } }
+    for (const n of NPCS) { const s = spotOf(n), d = Math.hypot(n.g.position.x - GAME.pos.x, n.g.position.z - GAME.pos.z); if (d < (s.pose === 'lie' ? 4.2 : 5.4) && d < bd + 0.8) { bd = d; const st = activeStep(n.def.id); best = { npc: n, label: st ? st.s.label : `和${n.def.nick}說話` }; } }
   }
   GAME.near = best;
   const label = GAME.mirror ? '離開鏡子' : GAME.sitting && !PC.on ? '站起來' : best ? (typeof best.label === 'function' ? best.label() : best.label) : '';
   hud.prompt.hidden = !label || DLG.open || DIA.open || PC.on; hud.prompt.querySelector('b').textContent = label; hud.act.disabled = !label && !DLG.open && !DIA.open;
-  hud.place.textContent = GAME.pos.x < 0 ? DIARY.place.rooms[0] : DIARY.place.rooms[1];
+  const room = roomAt(GAME.pos.x, GAME.pos.z); hud.place.textContent = room.name;
+  // 煙味飄進客廳
+  if (!smellShown && room.id === 'living' && momSmoking() && SAVE.slideOpen && GAME.pos.z > 4) { smellShown = true; meSay(DIARY.me.phrases[0]); toast('好濃的煙味……從前陽台飄進來的'); updateHUD(); }
   // 滑手機、看影片
   if (GAME.phone) {
     const P = GAME.phone; P.t += dt; P.next -= dt;
@@ -2003,26 +2337,60 @@ function gameUpdate(dt) {
   for (let i = EMOTES.length - 1; i >= 0; i--) { const e = EMOTES[i]; e.t += dt; e.p.y += dt * 1.5; const [x, y, ok] = project(e.p); e.el.style.transform = `translate(${x}px, ${y}px)`; e.el.style.opacity = ok ? 1 - e.t / e.dur : 0; if (e.t > e.dur) { e.el.remove(); EMOTES.splice(i, 1); } }
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) hud.toast.hidden = true; }
 }
+/* 家人會在不同的地方之間換來換去（只在你看不到的時候換，才不會瞬間移動） */
+function wantSpot(n) {
+  const id = n.def.id;
+  if (id === 'dad' && SAVE.bowl) return 'eat';
+  if (id === 'mom' && n.spot === 'smoke' && !questDone(DIARY.quests.find(q => q.id === 'smoke'))) return 'smoke';
+  return null;
+}
 function updatePerson(n, dt) {
   const p = n.g.position, d = Math.hypot(GAME.pos.x - p.x, GAME.pos.z - p.z);
+  // 換地方
+  n.moveT -= dt;
+  const forced = wantSpot(n);
+  if ((forced && forced !== n.spot) || (!forced && n.moveT <= 0 && n.def.schedule.length > 1)) {
+    const opts = n.def.schedule.filter(s => s !== n.spot), next = forced || opts[Math.floor(rnd() * opts.length)];
+    const here = roomAt(GAME.pos.x, GAME.pos.z).id, sp = n.def.spots[next];
+    if (!n.talking && roomAt(p.x, p.z).id !== here && roomAt(sp.pos[0], sp.pos[1]).id !== here) { placeAt(n, next); n.moveT = 45 + rnd() * 40; saveGame(); }
+    else n.moveT = 3;
+  }
+  const sp = spotOf(n);
   const look = Math.atan2(GAME.pos.x - p.x, GAME.pos.z - p.z);
-  n.head = turnTo(n.head, n.talking ? look : n.def.head, Math.min(1, dt * (n.talking ? 6 : 2)));
+  const canTurn = sp.pose !== 'lie' && (sp.pose !== 'sit' || sp.turn);
+  n.head = turnTo(n.head, n.talking && canTurn ? look : sp.head, Math.min(1, dt * (n.talking ? 6 : 2)));
   n.g.rotation.y = n.head;
-  const bob = animateRig(n.rig, sitP(1.0), clock + n.seed, dt, live ? 1 : 0, 1);
+  const P = npcPose(sp);
+  const bob = animateRig(n.rig, P, clock + n.seed, dt, live ? 1 : 0, sp.pose === 'hammer' ? 1.3 : sp.pose === 'stir' ? 0.7 : 1);
   n.body.position.y = (n.lift + bob) * n.def.scale[1];
+  // 煙、蒸氣、敲木頭
+  n.fxT -= dt;
+  if (n.fxT <= 0) {
+    if (sp.smoke) {
+      n.fxT = 0.45;
+      const m = p.clone().add(new V(Math.sin(n.head) * 1.2, 5.1 * n.def.scale[1] + 0.6, Math.cos(n.head) * 1.2));
+      const inside = SAVE.slideOpen;
+      puff3(m, inside ? new V((Math.random() - 0.5) * 0.6, 0.35, -2.4) : new V((Math.random() - 0.5) * 0.6, 1.3, 0.7), '#9ea2a9', inside ? 6.5 : 3.2);
+    } else if (sp.steam) { n.fxT = 0.6; puff3(new V(-10, 4.6, -24.4), new V(0, 1.6, 0.2), '#ffffff', 2.2); }
+    else if (sp.knock) { n.fxT = 1.1; if (d < 26) { emote('叩', p.clone().add(new V(1.5, 6, 2.6)), 0.8); if (d < 18) sfx('knock'); } }
+    else n.fxT = 1;
+  }
   // 撲克臉，偶爾大笑
   if (n.laughT > 0) { n.laughT -= dt; if (n.laughT <= 0) n.face.set(false); }
   n.blink -= dt; n.face.eyes.forEach(e => e.scale.y = n.blink < 0 ? 0.12 : 1); if (n.blink < -0.13) n.blink = 2 + rnd() * 3;
   // 頭上的閒聊泡泡
   n.bubbleT -= dt;
   const el = bubbleFor(n);
+  const L = sp.chatter || n.def.chatter;
   if (n.bubbleT <= 0) {
     n.bubbleT = 7 + rnd() * 6;
-    if (d < 30 && !n.talking) { const L = n.def.chatter, t = L[Math.floor(rnd() * L.length)]; el.textContent = t; el.dataset.t = 2.6; if (/哈哈/.test(t)) laugh(n, 2.4); }
+    if (d < 26 && !n.talking && L) { const t = L[Math.floor(rnd() * L.length)]; el.textContent = t; el.dataset.t = 2.6; if (/哈哈/.test(t)) laugh(n, 2.4); }
   }
-  el.dataset.t -= dt; const [x, y, ok] = project(p.clone().add(new V(0, 8.4 * n.def.scale[1], 0)));
+  const top = sp.pose === 'lie' ? new V(0, sp.bed + 2.5, -3) : new V(0, (sp.pose === 'sit' ? 7.6 : 8.6) * n.def.scale[1] + 0.4, 0);
+  el.dataset.t -= dt; const [x, y, ok] = project(p.clone().add(top));
   el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`; el.style.opacity = ok && el.dataset.t > 0 && !n.talking && !DIA.open && !PC.on ? 1 : 0;
 }
+
 /* ---------- 下載 PNG：把現在的穿搭和姿勢存成透明背景的圖 ---------- */
 async function savePNG(blob, filename) {
   try {
